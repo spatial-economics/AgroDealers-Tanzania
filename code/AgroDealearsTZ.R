@@ -3,6 +3,8 @@
 library(osmdata)
 library(raster)
 library(sf)
+
+library(RColorBrewer)
 # library(gdistance) # Library called inline to avoid namespace collisions with raster library
 
 # INPUT DATA --------------------------------------------------------------------------------------
@@ -12,7 +14,7 @@ agrodealers.csv <- read.csv("./data/Esoko safari/spatial/agroid_coordinates_pric
 tza.osm.towns <- shapefile(
     "data/hotosm_tza_populated_places_points_shp/hotosm_tza_populated_places_points.shp")
 
-tza.roads <- shapefile("./data/Tanzania/Roads/TZA_Roads.shp")
+# tza.roads <- shapefile("./data/Tanzania/Roads/TZA_Roads.shp")
 tza.osm.roads_ <- shapefile("./data/Tanzania/Roads/OpenStreetMap/hotosm_tza_roads_lines.shp")
 
 tza.population <- raster("data/TZA_popmap15adj_v2b.tif")
@@ -95,10 +97,10 @@ tza.rds.sand <- createSurface(road.shp = tza.osm.roads, toRaster = tza.lc.travel
 # Overlay Road surfaces based on priority ---------------------------------------------------------#
 overlaySurfaces <- function(raster.stack) {
     # Merge roads layers into one - in case of overlap
-    for (count in 1:length(raster.stack)) {
-        if (count == 1) tza.roads.raster <- raster.stack[count]
-        if (count < 1)
-        tza.roads.raster <- overlay(stack(tza.roads.raster, raster.stack[count]), 
+    for (count in 1:dim(raster.stack)[3]) {
+        if (count == 1) tza.roads.raster <- raster.stack[[count]]
+        if (count > 1)
+        tza.roads.raster <- overlay(tza.roads.raster, raster.stack[[count]], 
                                     fun=function(x) ifelse(is.na(x[1]), x[2], x[1]))
     }
     return(tza.roads.raster)
@@ -108,6 +110,10 @@ tza.rds.surface <- overlaySurfaces(stack(tza.rds.asphalt, tza.rds.gravel, tza.rd
 
 # Overlay Land cover over Road surface -----------------------------------------------------------#
 tza.traveltimes <- overlaySurfaces(stack(tza.rds.surface, tza.lc.traveltimes))
+
+cuts=c(-0.0015, 0.001, 0.0015) #set breaks
+pal <- colorRampPalette(c("red","green"))
+plot(tza.rds.surface, breaks=cuts, col = pal(3))
 
 # Adjust travel times for slope - Reproject Slope to to align it to traveltimes raster
 tza.slope.laea <- projectRaster(tza.slope, tza.traveltimes)
