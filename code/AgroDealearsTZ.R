@@ -11,7 +11,7 @@ library(RColorBrewer)
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 agrodealers.csv <- read.csv("./data/Esoko safari/spatial/agroid_coordinates_prices.csv")
-tza.osm.towns <- shapefile(
+tza.osm.towns_ <- shapefile(
     "data/hotosm_tza_populated_places_points_shp/hotosm_tza_populated_places_points.shp")
 
 # tza.roads <- shapefile("./data/Tanzania/Roads/TZA_Roads.shp")
@@ -35,8 +35,9 @@ laea.prj <- CRS("+proj=laea +lat_0=5 +lon_0=20 +x_0=0 +y_0=0 +a=6370997 +b=63709
 tza.osm.roads <- spTransform(tza.osm.roads_, laea.prj)
 
 # Tanzania Cities and Towns ----------------------------------------------------------------------#
-head(tza.osm.towns@data)
-tza.osm.towns$population <- as.numeric(tza.osm.towns$population) 
+head(tza.osm.towns_@data)
+tza.osm.towns_$population <- as.numeric(tza.osm.towns_$population)
+tza.osm.towns <- spTransform(tza.osm.towns_, laea.prj)
 
 # Agrodealears locations -------------------------------------------------------------------------#
 tza.agrodealers.shp_ <- SpatialPointsDataFrame(data.frame(agrodealers.csv$longitude, 
@@ -107,62 +108,94 @@ overlaySurfaces <- function(raster.stack) {
 }
 tza.rds.surface <- overlaySurfaces(stack(tza.rds.asphalt, tza.rds.gravel, tza.rds.concrete,
                                          tza.rds.compacted, tza.rds.sand) )
-
-# Overlay Land cover over Road surface -----------------------------------------------------------#
-tza.traveltimes <- overlaySurfaces(stack(tza.rds.surface, tza.lc.traveltimes))
-
 cuts=c(-0.0015, 0.001, 0.0015) #set breaks
 pal <- colorRampPalette(c("red","green"))
 plot(tza.rds.surface, breaks=cuts, col = pal(3))
 
-# Adjust travel times for slope - Reproject Slope to to align it to traveltimes raster
+# Overlay Land cover over Road surface ------------------------------------------------------------#
+tza.traveltimes <- overlaySurfaces(stack(tza.rds.surface, tza.lc.traveltimes))
+
+cuts=c(0.001, 0.0015, c(0.01, 0.02, 0.04, 0.05, 0.11)) #set breaks
+pal <- colorRampPalette(c("red", "yellow", "green", "blue"))
+plot(tza.traveltimes, breaks=cuts, col = pal(7))
+
+# Adjust travel times for slope - Reproject Slope to to align it to traveltimes raster ------------#
 tza.slope.laea <- projectRaster(tza.slope, tza.traveltimes)
 decay <- 1.5 ## this is the decay coefficient; governs how much the slope impacts the speed
 radians <- function(x) { x * pi / 180 }  
 tza.traveltimes.adj <- tza.traveltimes * exp(decay*tan(radians(tza.slope.laea))) 
 
-# Create transition layer ------------------------------------------------------------------------#
+# Create transition layer -------------------------------------------------------------------------#
 tza.transition <- gdistance::transition(tza.traveltimes.adj, function(x) 1/mean(x), 8)
 # Correction for diagonal distances
-tza.transition.adj <- geoCorrection(tza.transition, type="r", multpl=FALSE)
+tza.transition.adj <- gdistance::geoCorrection(tza.transition, type="r", multpl=FALSE)
 
-#-------------------------------------------------------------------------------------------------#
+#--------------------------------------------------------------------------------------------------#
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 
 
 # CALCULATE TRAVEL TIMES --------------------------------------------------------------------------
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tza.agrodealers.output <- tza.agrodealers.shp
 # 1. Travel time to nearest district HQ
 
 # 2. Travel time to nearest town of 50,000+ -------------------------------------------------------#
-tza.osm.towns.50kplus <- tza.osm.towns[which(tza.osm.towns$population >= 50000),]
-tza.time2.50kplus <- accCost(tza.transition.adj, tza.osm.towns.50kplus)
+town.50k.plus.pop <- tza.osm.towns[which(tza.osm.towns$population >= 50000),]
+tza.time2.50k.towns <- gdistance::accCost(tza.transition.adj,
+                                          town.50k.plus.pop)
+names(tza.time2.50k.towns) <- "min2_50Ktowns"
+tza.agrodealers.output <- extract(tza.time2.50k.towns, tza.agrodealers.output, 
+                                  method='simple', sp=TRUE)
 
-# Euclidean Distance to Nearest town (from agrodealer) of 50,000+
-dist2town <- pointDistance(agrodealers.shp, tza.towns, lonlat = TRUE)
+
+
+# 2.2 Euclidean Distance to Nearest town (from agrodealer) of 50,000+
+dist2town <- pointDistance(tza.agrodealers.shp, town.50k.plus.pop, lonlat = TRUE)
 town.near.agro_id  <- apply(dist2town, 1, which.min)
-town.near.agro <- data.frame(agrodealer=agrodealers.shp@data$agroid, 
-                             town=tza.towns[town.near.agro_id,]
-)
+tza.agrodealers.output@data["nearest50Ktwn"] <- town.50k.plus.pop@data$name[town.near.agro_id]
 
 
 # 3. Travel time to nearest all-weather road ------------------------------------------------------#
 tza.all.weather.road <- tza.osm.roads[which(tza.osm.roads$surface %in% c("asphalt", "gravel", 
                                                                          "concrete", "compacted",
-                                                                         "sand") )]
-tza.time2.weather.road <- accCost(tza.transition.adj, tza.all.weather.road)
-# Eucledian distance to road
-agro.dist.to.rd <- geosphere::dist2Line(p = st_coordinates(sf::st_as_sf(agrodealers.shp)), 
-                                        line = st_coordinates(sf::st_as_sf(tza.roads))[,1:2])
+                                                                         "sand") ),]
+tza.time2.weather.road <- gdistance::accCost(tza.transition.adj, 
+                                             st_coordinates(st_as_sf(tza.all.weather.road))[,1:2])
 
+names(tza.time2.weather.road) <- "min2_AW_road"
+tza.agrodealers.output <- extract(tza.time2.weather.road, tza.agrodealers.output, 
+                                  method='simple', sp=TRUE)
+
+# 3.2 Eucledian distance to road
+# agro.dist.to.rd <- geosphere::dist2Line(tza.agrodealers.shp_, 
+#                                         spTransform(tza.all.weather.road, wgs.prj) )
+# tza.agrodealers.output@data["EucDist2road"] <- agro.dist.to.rd[  ]
 
 # 4. Travel time to nearest (other) agrodealer ----------------------------------------------------#
-time2otheragro.stack <- stack()
+time2otheragro <- c()
+nearestotheragro <- c()
+tmp.fun <- function(a, rmv) a [! a %in% rmv]
 for (agrodealer in 1:length(tza.agrodealers.shp)) {
-    time2otheragro.stack[agrodealer] <- accCost(tza.transition.adj, 
-                                                tza.agrodealers.shp[agrodealer,] )
-}
+    print(paste0("Agrodealer: ", agrodealer))
+    dist2agros <- extract(gdistance::accCost(tza.transition.adj, tza.agrodealers.shp[agrodealer, ]),
+                         tza.agrodealers.output, 
+                         method = 'simple')
+    
+    time2otheragro <- c(time2otheragro, min(dist2agros[-agrodealer]))
+    
+    
+    nearestotheragro <- c(nearestotheragro, 
+                          toString( tmp.fun(which(dist2agros == min(dist2agros[-agrodealer])), 
+                                            agrodealer )
+                                   )
+                          )
+    # break()
+    }
+rm(tmp.fun)
+names(tza.time2.weather.road) <- "min2_ngb_Agro"
+tza.agrodealers.output <- extract(tza.time2.weather.road, tza.agrodealers.output, 
+                                  method='simple', sp=TRUE)
 tza.time2.other.agro_ <- extract(dist2otheragro, tza.agrodealers.shp, method='simple', df=TRUE)
 tza.time2.other.agro <- apply(tza.time2.other.agro_, 1, FUN=min)
 
@@ -187,7 +220,7 @@ tza.agro.within10km <- apply(tza.dist2agro, dist2agro, 1, function(x) which(x < 
 
 
 # 9-10 Calculate for each district in study: Travel Time to agrodealear-Within District -----------#
-tza.traveltime.2agro <- accCost(tza.transition.adj, tza.agrodealers.shp)
+tza.traveltime.2agro <- gdistance::accCost(tza.transition.adj, tza.agrodealers.shp)
 # Share of rural population further than [1,2,3,4] hour of nearest agrodealer
 furthestpop <- function(time_) {
     time.mask <- calc(tza.traveltime.2agro, fun=function(x) ifelse(x > 60*time_, 1, NA))
