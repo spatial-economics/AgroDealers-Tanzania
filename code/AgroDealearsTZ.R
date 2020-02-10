@@ -17,7 +17,7 @@ tza.osm.towns_ <- shapefile(
 # tza.roads <- shapefile("./data/Tanzania/Roads/TZA_Roads.shp")
 tza.osm.roads_ <- shapefile("./data/Tanzania/Roads/OpenStreetMap/hotosm_tza_roads_lines.shp")
 
-tza.population <- raster("data/TZA_popmap15adj_v2b.tif")
+tza.population_ <- raster("data/TZA_popmap15adj_v2b.tif")
 tza.landcover <- raster("spatial/glc2000/glc2000_dd.tif")
 tza.slope <- raster("spatial/terrain/slope500m_laz.tif")
 
@@ -57,6 +57,9 @@ df <- data.frame(id=0:24, v=c(0.11, 0.04, 0.02, 0.04, 0.05, 0.05, 0.02, 0.02, 0.
                               0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.04, 0.01, 0.02, 0.01, 
                               0.02, 0.02, 0.04, 0.11, 0.01) ) 
 tza.lc.traveltimes <- subs(tza.landcover.laea, df) # Reclassify
+
+# Tanzania Population ----------------------------------------------------------------------------#
+tza.population <- projectRaster(tza.population_, tza.landcover.laea, method = "ngb")
 
 # Find district hqs ------------------------------------------------------------------------------#
               # Continue Here to extract dist HQS from towns #
@@ -172,9 +175,9 @@ tza.agrodealers.output <- extract(tza.time2.weather.road, tza.agrodealers.output
 #                                         spTransform(tza.all.weather.road, wgs.prj) )
 # tza.agrodealers.output@data["EucDist2road"] <- agro.dist.to.rd[  ]
 
-# 4. Travel time to nearest (other) agrodealer ----------------------------------------------------#
-time2otheragro <- c()
-nearestotheragro <- c()
+# 4, 7-8. Travel time to nearest (other) agrodealer and ------------------------------------------#
+#  Number of agrodealers within a given travel time 
+time2otheragro <- nearestotheragro <- agroswithin30min <- agroswithin60min <- c()
 tmp.fun <- function(a, rmv) a [! a %in% rmv]
 for (agrodealer in 1:length(tza.agrodealers.shp)) {
     print(paste0("Agrodealer: ", agrodealer))
@@ -183,40 +186,33 @@ for (agrodealer in 1:length(tza.agrodealers.shp)) {
                          method = 'simple')
     
     time2otheragro <- c(time2otheragro, min(dist2agros[-agrodealer]))
-    
-    
+    agroswithin30min <- c(agroswithin30min, toString(tmp.fun(which(dist2agros <= 30), agrodealer)))
+    agroswithin60min <- c(agroswithin30min, toString(tmp.fun(which(dist2agros <= 60), agrodealer)))
     nearestotheragro <- c(nearestotheragro, 
-                          toString( tmp.fun(which(dist2agros == min(dist2agros[-agrodealer])), 
-                                            agrodealer )
-                                   )
-                          )
+                          toString(tmp.fun( which(dist2agros == min(dist2agros[-agrodealer])),
+                                            agrodealer )))
     # break()
     }
 rm(tmp.fun)
-names(tza.time2.weather.road) <- "min2_ngb_Agro"
-tza.agrodealers.output <- extract(tza.time2.weather.road, tza.agrodealers.output, 
-                                  method='simple', sp=TRUE)
-tza.time2.other.agro_ <- extract(dist2otheragro, tza.agrodealers.shp, method='simple', df=TRUE)
-tza.time2.other.agro <- apply(tza.time2.other.agro_, 1, FUN=min)
 
-# 7-8, Number of agrodealers within a given travel time -------------------------------------------#
-
-# Number of (other) agrodealers within 30 minutes travel time - -----------------------------------#
-tza.30min.2other.agro <- apply(tza.time2.other.agro_, 1, FUN=function(x) length(x[which(x <= 30)]))
-# Number of (other) agrodealers within 60 minutes travel time  ------------------------------------#
-tza.60min.2other.agro <- apply(tza.time2.other.agro_, 1, FUN=function(x) length(x[which(x <= 60)]))
+tza.agrodealers.output@data["Time2NxtAgro"] <- time2otheragro
+tza.agrodealers.output@data["NearestAgros"] <- nearestotheragro
+tza.agrodealers.output@data["AgroIn30min"] <- agroswithin30min
+tza.agrodealers.output@data["AgroIn60min"] <- agroswithin60min[-300]
 
 
 # 5-6, Number of agrodealers within a radius  -----------------------------------------------------#
-tza.dist2agro1 <- pointDistance(agrodealers.shp, lonlat = TRUE)
-tza.dist2agro <- apply(abind::abind(dist2agro1, t(dist2agro1), along = 3), 1:2, 
+tza.dist2agro_ <- pointDistance(tza.agrodealers.shp, lonlat=FALSE)
+tza.dist2agro <- apply(abind::abind(tza.dist2agro_, t(tza.dist2agro_), along = 3), 1:2, 
                    function(x) sum(x, na.rm = TRUE))
 
 # Number of agrodealers within 5km radius
-tza.agro.within5km <- apply(tza.dist2agro, 1, function(x) which(x < 5000))
+tza.agrodealers.output@data["AgroIn5KM"] <- apply(tza.dist2agro, 1, 
+                                                  function(x) toString(which(x <= 5000)))
 
 # Number of agrodealers within 10km radius
-tza.agro.within10km <- apply(tza.dist2agro, dist2agro, 1, function(x) which(x < 10000))
+tza.agrodealers.output@data["AgroIn10KM"] <- apply(tza.dist2agro, 1, 
+                                                   function(x) toString(which(x <= 10000)))
 
 
 # 9-10 Calculate for each district in study: Travel Time to agrodealear-Within District -----------#
@@ -241,10 +237,10 @@ nearestPop <- function(time_) {
              fun=function(x) ifelse(is.na(x[2]), x[2], x[1]))
 }
 
-tza.trvltime.2agro.1hr <- nearestPop(1) # >1hour
-tza.trvltime.2agro.2hr <- nearestPop(2) # >2hour
-tza.trvltime.2agro.3hr <- nearestPop(3) # >3hour
-tza.trvltime.2agro.4hr <- nearestPop(4) # >4hour
+tza.trvltime.4frmAgro.1hr <- nearestPop(1) # >1hour
+tza.trvltime.4frmAgro.2hr <- nearestPop(2) # >2hour
+tza.trvltime.4frmAgro.3hr <- nearestPop(3) # >3hour
+tza.trvltime.4frmAgro.4hr <- nearestPop(4) # >4hour
 
 
 #-------------------------------------------------------------------------------------------------#
