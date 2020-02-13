@@ -24,6 +24,9 @@ tza.slope <- raster("spatial/terrain/slope500m_laz.tif")
 wgs.prj <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 laea.prj <- CRS("+proj=laea +lat_0=5 +lon_0=20 +x_0=0 +y_0=0 +a=6370997 +b=6370997 
                 +units=m +no_defs")
+
+tza.regions <- getData("GADM", country="TZA", level = 1)
+tza.districts <- getData("GADM", country="TZA", level = 2)
 #-------------------------------------------------------------------------------------------------#
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
@@ -62,6 +65,15 @@ tza.lc.traveltimes <- subs(tza.landcover.laea, df) # Reclassify
 tza.population <- projectRaster(tza.population_, tza.landcover.laea, method = "ngb")
 
 # Find district hqs ------------------------------------------------------------------------------#
+plot(tza.districts)
+plot(tza.agrodealers.shp_, add=TRUE)
+unique(extract())
+
+tza.study.districts <- intersect(tza.districts, tza.agrodealers.shp_) 
+tza.study.population <- mask(tza.population, tza.study.districts)
+
+
+
               # Continue Here to extract dist HQS from towns #
                         # Mean while use all towns #
 #-------------------------------------------------------------------------------------------------#
@@ -218,30 +230,39 @@ tza.agrodealers.output@data["AgroIn10KM"] <- apply(tza.dist2agro, 1,
 # 9-10 Calculate for each district in study: Travel Time to agrodealear-Within District -----------#
 tza.traveltime.2agro <- gdistance::accCost(tza.transition.adj, tza.agrodealers.shp)
 # Share of rural population further than [1,2,3,4] hour of nearest agrodealer
-furthestpop <- function(time_) {
-    time.mask <- calc(tza.traveltime.2agro, fun=function(x) ifelse(x > 60*time_, 1, NA))
-    overlay( stack(tza.population, time.mask), 
-             fun=function(x) ifelse(is.na(x[2]), x[2], x[1]))
-}
+reclassify.matrix <- matrix(c(0*60, 1*60, 1,  # <1hour
+                              1*60, 2*60, 2,  # <2hour
+                              2*60, 3*60, 3,  # <3hour
+                              3*60, 4*60, 4,  # <4hour
+                              4*60, Inf, 5 ), byrow = TRUE, ncol = 3)
+tza.travelzones.2agro <- reclassify(tza.traveltime.2agro, reclassify.matrix)
 
-tza.trvltime.2agro.1hr <- furthestpop(1) # <1hour
-tza.trvltime.2agro.2hr <- furthestpop(2) # <2hour
-tza.trvltime.2agro.3hr <- furthestpop(3) # <3hour
-tza.trvltime.2agro.4hr <- furthestpop(4) # <4hour
+    # PROJECTION ISSUE
+tza.traveltimes.zonal <- zonal(tza.population_, projectRaster(tza.travelzones.2agro,
+                                                              tza.population_, method = 'ngb'), 
+                               fun="sum", digits=2, na.rm = TRUE)
+tza.pop.study.distct <- mask(tza.population_, tza.study.districts)
+tza.study.population <- sum(values(tza.pop.study.distct), na.rm = TRUE)
 
+# <1hour
+traveltimes.less1hour <- tza.traveltimes.zonal[1,2] / tza.total.population
+# <2hour
+traveltimes.less2hour <- tza.traveltimes.zonal[2,2] / tza.total.population
+# <3hour
+traveltimes.less3hour <- tza.traveltimes.zonal[3,2] / tza.total.population
+# <4hour
+traveltimes.less4hour <- tza.traveltimes.zonal[4,2] / tza.total.population
 
 # Share of rural population with [0,1,2,3+] agrodealers within 1hr travel time
-nearestPop <- function(time_) {
-    time.mask <- calc(tza.traveltime.2agro, fun=function(x) ifelse(x <= 60*time_, 1, NA))
-    overlay( stack(tza.population, time.mask), 
-             fun=function(x) ifelse(is.na(x[2]), x[2], x[1]))
-}
 
-tza.trvltime.4frmAgro.1hr <- nearestPop(1) # >1hour
-tza.trvltime.4frmAgro.2hr <- nearestPop(2) # >2hour
-tza.trvltime.4frmAgro.3hr <- nearestPop(3) # >3hour
-tza.trvltime.4frmAgro.4hr <- nearestPop(4) # >4hour
-
+# <1hour
+traveltimes.over1hour <- tza.traveltimes.zonal[1,2] / tza.total.population
+# <2hour
+traveltimes.over2hour <- tza.traveltimes.zonal[2,2] / tza.total.population
+# <3hour
+traveltimes.over3hour <- tza.traveltimes.zonal[3,2] / tza.total.population
+# <4hour
+traveltimes.over4hour <- tza.traveltimes.zonal[4,2] / tza.total.population
 
 #-------------------------------------------------------------------------------------------------#
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
