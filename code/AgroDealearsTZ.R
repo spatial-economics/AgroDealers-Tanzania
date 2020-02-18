@@ -89,26 +89,18 @@ tza.study.population <- mask(tza.population, tza.study.districts)
 # Rasterize roads layer -------------------------------------------------------------------------#
 createSurface <- function(road.shp, toRaster, field_, fun_, travel.rate, surface.col, surface_) {
     # Rasterise roads (lines shapefile) 
-    tmp1 <- road.shp[which(road.shp@data[,surface.col] == surface_),]
+    tmp1 <- road.shp[which(road.shp@data[,surface.col] %in% surface_),]
     tmp1[["min_meter"]] <- travel.rate
     rasterize(tmp1, toRaster, field=field_, fun=fun_)
 }
 
-tza.rds.asphalt <- createSurface(road.shp = tza.osm.roads, toRaster = tza.lc.traveltimes, 
-                                 fun_ = 'last', field_ = "min_meter", travel.rate = 0.0010, 
-                                 surface.col = "surface", surface_ = "asphalt")
-tza.rds.gravel <- createSurface(road.shp = tza.osm.roads, toRaster = tza.lc.traveltimes, 
-                                fun_ = 'last', field_ = "min_meter", travel.rate = 0.0010, 
-                                 surface.col = "surface", surface_ = "gravel")
-tza.rds.concrete <- createSurface(road.shp = tza.osm.roads, toRaster = tza.lc.traveltimes, 
+tza.trunk.n.pri.rds <- createSurface(road.shp = tza.osm.roads, toRaster = tza.lc.traveltimes, 
                                   fun_ = 'last', field_ = "min_meter", travel.rate = 0.0010, 
-                                 surface.col = "surface", surface_ = "concrete")
-tza.rds.compacted <- createSurface(road.shp = tza.osm.roads, toRaster = tza.lc.traveltimes,
+                                  surface.col = "highway", surface_ = c("trunk", "primary"))
+tza.sec.n.ter.rds <- createSurface(road.shp = tza.osm.roads, toRaster = tza.lc.traveltimes,
                                    fun_ = 'last', field_ = "min_meter", travel.rate = 0.0015, 
-                                 surface.col = "surface", surface_ = "compacted")
-tza.rds.sand <- createSurface(road.shp = tza.osm.roads, toRaster = tza.lc.traveltimes, 
-                                 fun_ = 'last', field_ = "min_meter", travel.rate = 0.0015, 
-                                 surface.col = "surface", surface_ = "sand")
+                                   surface.col = "highway", surface_ = c("secondary", "tertiary"))
+
 
 # Overlay Road surfaces based on priority ---------------------------------------------------------#
 overlaySurfaces <- function(raster.stack) {
@@ -121,8 +113,7 @@ overlaySurfaces <- function(raster.stack) {
     }
     return(tza.roads.raster)
 }
-tza.rds.surface <- overlaySurfaces(stack(tza.rds.asphalt, tza.rds.gravel, tza.rds.concrete,
-                                         tza.rds.compacted, tza.rds.sand) )
+tza.rds.surface <- overlaySurfaces(stack(tza.trunk.n.pri.rds, tza.sec.n.ter.rds) )
 cuts=c(-0.0015, 0.001, 0.0015) #set breaks
 pal <- colorRampPalette(c("red","green"))
 plot(tza.rds.surface, breaks=cuts, col = pal(3))
