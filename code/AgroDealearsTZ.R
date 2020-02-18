@@ -67,7 +67,7 @@ tza.population <- projectRaster(tza.population_, tza.landcover.laea, method = "n
 # Find district hqs ------------------------------------------------------------------------------#
 plot(tza.districts)
 plot(tza.agrodealers.shp_, add=TRUE)
-unique(extract())
+# unique(extract())
 
 tza.study.districts <- intersect(tza.districts, tza.agrodealers.shp_) 
 tza.study.population <- mask(tza.population, tza.study.districts)
@@ -190,27 +190,37 @@ tza.agrodealers.output <- extract(tza.time2.weather.road, tza.agrodealers.output
 # 4, 7-8. Travel time to nearest (other) agrodealer and ------------------------------------------#
 #  Number of agrodealers within a given travel time 
 time2otheragro <- nearestotheragro <- agroswithin30min <- agroswithin60min <- c()
-tmp.fun <- function(a, rmv) a [! a %in% rmv]
+rmv.fun <- function(a, rmv) a [! a %in% rmv]
+time2agro.1hr.sum <- 0
 for (agrodealer in 1:length(tza.agrodealers.shp)) {
     print(paste0("Agrodealer: ", agrodealer))
-    dist2agros <- extract(gdistance::accCost(tza.transition.adj, tza.agrodealers.shp[agrodealer, ]),
+    time2agro <- gdistance::accCost(tza.transition.adj, tza.agrodealers.shp[agrodealer, ])
+    dist2agros <- extract(time2agro,
                          tza.agrodealers.output, 
                          method = 'simple')
     
     time2otheragro <- c(time2otheragro, min(dist2agros[-agrodealer]))
-    agroswithin30min <- c(agroswithin30min, toString(tmp.fun(which(dist2agros <= 30), agrodealer)))
-    agroswithin60min <- c(agroswithin30min, toString(tmp.fun(which(dist2agros <= 60), agrodealer)))
+    agroswithin30min <- c(agroswithin30min, toString(rmv.fun(which(dist2agros <= 30), agrodealer)))
+    agroswithin60min <- c(agroswithin60min, toString(rmv.fun(which(dist2agros <= 60), agrodealer)))
     nearestotheragro <- c(nearestotheragro, 
-                          toString(tmp.fun( which(dist2agros == min(dist2agros[-agrodealer])),
+                          toString(rmv.fun( which(dist2agros == min(dist2agros[-agrodealer])),
                                             agrodealer )))
+   
+    # time2agro.1hr.sum used later to calculate population with [0,1,2,3+] agrodealers within 1hr 
+    reclassify.matrix.1hr <- matrix(c(-Inf, 1*60, 1, 1*60, Inf, 0), byrow = TRUE, ncol = 3)
+    time2agro.1hr <- reclassify(time2agro, reclassify.matrix.1hr)
+    time2agro.1hr.sum <- time2agro.1hr.sum + time2agro.1hr
+    
+    # plot(time2agro.1hr.sum)
     # break()
+    
     }
-rm(tmp.fun)
+
 
 tza.agrodealers.output@data["Time2NxtAgro"] <- time2otheragro
 tza.agrodealers.output@data["NearestAgros"] <- nearestotheragro
 tza.agrodealers.output@data["AgroIn30min"] <- agroswithin30min
-tza.agrodealers.output@data["AgroIn60min"] <- agroswithin60min[-300]
+tza.agrodealers.output@data["AgroIn60min"] <- agroswithin60min
 
 
 # 5-6, Number of agrodealers within a radius  -----------------------------------------------------#
@@ -237,9 +247,12 @@ reclassify.matrix <- matrix(c(-Inf, 1*60, 1,  # <1hour
 tza.travelzones.2agro <- reclassify(tza.traveltime.2agro, reclassify.matrix, rcl = )
 
 # PROJECTION ISSUE
+# Use time2agro.1hr.sum calculated in earlier loop
+time2agro.1hr.sum.wgs <- projectRaster(time2agro.1hr.sum, tza.population_, method = 'ngb')
 tza.travelzones.2agro.wgs <- projectRaster(tza.travelzones.2agro, tza.population_, method = 'ngb')
 traveltimes.less1hour <- traveltimes.less2hour <- traveltimes.less3hour <- 
-    traveltimes.less4hour <- vector(length = length(tza.study.districts) )
+    traveltimes.less4hour <- traveltimes.in1hour <- traveltimes.in2hour <- 
+    traveltimes.in3hour <- traveltimes.in4hour <- vector(length = length(tza.study.districts) )
 for (district.id in 1:length(tza.study.districts)) {
     print(district.id)
     district.population <- mask(tza.population_, tza.study.districts[1,])
@@ -260,10 +273,28 @@ for (district.id in 1:length(tza.study.districts)) {
     # <4hour
     traveltimes.less4hour[district.id] <- traveltimes.zonal[4, 2] / district.population.sum
     
+    
+    
+    # Share of rural population with [0,1,2,3+] agrodealers within 1hr travel time
+    traveltime.1hr.zonal <- zonal( district.population, time2agro.1hr.sum.wgs, 
+                                fun = "sum", digits = 2, na.rm = TRUE
+    )
+    print(traveltime.1hr.zonal)
+    
+    # Share of rural population further than [1,2,3,4] hour of nearest agrodealer
+    # <1hour
+    traveltimes.in1hour[district.id] <- traveltime.1hr.zonal[1, 2] / district.population.sum
+    # <2hour
+    traveltimes.in2hour[district.id] <- traveltime.1hr.zonal[2, 2] / district.population.sum
+    # <3hour
+    traveltimes.in3hour[district.id] <- traveltime.1hr.zonal[3, 2] / district.population.sum
+    # <4hour
+    traveltimes.in4hour[district.id] <- traveltime.1hr.zonal[4, 2] / district.population.sum
+    
 
 }
 
-    # Share of rural population with [0,1,2,3+] agrodealers within 1hr travel time
+# Share of rural population with [0,1,2,3+] agrodealers within 1hr travel time
     # # <1hour
     # traveltimes.over1hour[district.id] <- traveltimes.zonal[1, 2] / tza.study.population
     # # <2hour
@@ -279,3 +310,4 @@ for (district.id in 1:length(tza.study.districts)) {
 
 #-------------------------------------------------------------------------------------------------#
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
