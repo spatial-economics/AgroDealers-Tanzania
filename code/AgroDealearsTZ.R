@@ -34,6 +34,9 @@ tza.districts <- getData("GADM", country="TZA", level = 2)
 
 # DATA PREPARATION --------------------------------------------------------------------------------
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+# Create required folders
+dir.create(path = "./output", showWarnings = FALSE)
+dir.create(path = "./tmp", showWarnings = FALSE)
 # 
 tza.osm.roads <- spTransform(tza.osm.roads_, laea.prj)
 
@@ -62,8 +65,10 @@ df <- data.frame(id=0:24, v=c(0.11, 0.04, 0.02, 0.04, 0.05, 0.05, 0.02, 0.02, 0.
 tza.lc.traveltimes <- subs(tza.landcover.laea, df) # Reclassify
 
 # Tanzania Population ----------------------------------------------------------------------------#
-tza.population.wgs <- aggregate(tza.population_, fact=10, fun=sum, na.rm=TRUE)
-tza.population <- projectRaster(tza.population.wgs, tza.landcover.laea, method = "ngb")
+tza.population.wgs <- aggregate(tza.population_, fact=10, fun=sum, na.rm=TRUE, 
+                                filename="tmp/tzapopulationwgs.grd")
+tza.population <- projectRaster(tza.population.wgs, tza.landcover.laea, method = "ngb", 
+                                filename="tmp/tzapopulation.grd" )
 
 # Find district hqs ------------------------------------------------------------------------------#
 plot(tza.districts)
@@ -71,7 +76,7 @@ plot(tza.agrodealers.shp_, add=TRUE)
 # unique(extract())
 
 tza.study.districts <- intersect(tza.districts, tza.agrodealers.shp_) 
-tza.study.population <- mask(tza.population, tza.study.districts)
+tza.study.population <- mask(tza.population, tza.study.districts, filename="tmp/tzastudypopulation.grd")
 
 
 
@@ -127,7 +132,7 @@ pal <- colorRampPalette(c("red", "yellow", "green", "blue"))
 plot(tza.traveltimes, breaks=cuts, col = pal(7))
 
 # Adjust travel times for slope - Reproject Slope to to align it to traveltimes raster ------------#
-tza.slope.laea <- projectRaster(tza.slope, tza.traveltimes)
+tza.slope.laea <- projectRaster(tza.slope, tza.traveltimes, filename="tmp/tzaslopelaea.grd" )
 decay <- 1.5 ## this is the decay coefficient; governs how much the slope impacts the speed
 radians <- function(x) { x * pi / 180 }  
 tza.traveltimes.adj <- tza.traveltimes * exp(decay*tan(radians(tza.slope.laea))) 
@@ -200,7 +205,7 @@ for (agrodealer in 1:length(tza.agrodealers.shp)) {
    
     # time2agro.1hr.sum used later to calculate population with [0,1,2,3+] agrodealers within 1hr 
     reclassify.matrix.1hr <- matrix(c(-Inf, 1*60, 1, 1*60, Inf, 0), byrow = TRUE, ncol = 3)
-    time2agro.1hr <- reclassify(time2agro, reclassify.matrix.1hr)
+    time2agro.1hr <- reclassify(time2agro, reclassify.matrix.1hr, filename="tmp/time2agro1hr.grd")
     time2agro.1hr.sum <- time2agro.1hr.sum + time2agro.1hr
     
     # plot(time2agro.1hr.sum)
@@ -255,7 +260,8 @@ tza.rural.population <- tza.population.wgs*tza.rural.areas
                         
 for (district.id in 1:length(tza.study.districts)) {
     print(district.id)
-    district.rural.pop <- mask(tza.rural.population, tza.study.districts[district.id,])
+    district.rural.pop <- mask(tza.rural.population, tza.study.districts[district.id,], 
+                               filename="tmp/districtruralpop.grd")
     
     traveltimes.zonal <- zonal( district.rural.pop, tza.travelzones.2agro.wgs, 
                                     fun = "sum", digits = 2, na.rm = TRUE
