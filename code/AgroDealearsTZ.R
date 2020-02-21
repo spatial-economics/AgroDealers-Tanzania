@@ -3,9 +3,9 @@
 library(osmdata)
 library(raster)
 library(sf)
+# library(gdistance) # Library called inline to avoid namespace collisions with raster library
 
 library(RColorBrewer)
-# library(gdistance) # Library called inline to avoid namespace collisions with raster library
 
 # INPUT DATA --------------------------------------------------------------------------------------
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -66,9 +66,9 @@ tza.lc.traveltimes <- subs(tza.landcover.laea, df) # Reclassify
 
 # Tanzania Population ----------------------------------------------------------------------------#
 tza.population.wgs <- aggregate(tza.population_, fact=10, fun=sum, na.rm=TRUE, 
-                                filename="tmp/tzapopulationwgs.grd")
+                                filename="tmp/tzapopulationwgs.grd", overwrite=TRUE)
 tza.population <- projectRaster(tza.population.wgs, tza.landcover.laea, method = "ngb", 
-                                filename="tmp/tzapopulation.grd" )
+                                filename="tmp/tzapopulation.grd", overwrite=TRUE )
 
 # Find district hqs ------------------------------------------------------------------------------#
 plot(tza.districts)
@@ -76,9 +76,9 @@ plot(tza.agrodealers.shp_, add=TRUE)
 # unique(extract())
 
 tza.study.districts <- intersect(tza.districts, tza.agrodealers.shp_) 
-tza.study.population <- mask(tza.population, tza.study.districts, filename="tmp/tzastudypopulation.grd")
-
-
+tza.study.population <- mask(tza.population, tza.study.districts, 
+                             filename="tmp/tzastudypopulation.grd", 
+                             overwrite=TRUE)
 
               # Continue Here to extract dist HQS from towns #
                         # Mean while use all towns #
@@ -132,7 +132,8 @@ pal <- colorRampPalette(c("red", "yellow", "green", "blue"))
 plot(tza.traveltimes, breaks=cuts, col = pal(7))
 
 # Adjust travel times for slope - Reproject Slope to to align it to traveltimes raster ------------#
-tza.slope.laea <- projectRaster(tza.slope, tza.traveltimes, filename="tmp/tzaslopelaea.grd" )
+tza.slope.laea <- projectRaster(tza.slope, tza.traveltimes, filename="tmp/tzaslopelaea.grd", 
+                                overwrite=TRUE )
 decay <- 1.5 ## this is the decay coefficient; governs how much the slope impacts the speed
 radians <- function(x) { x * pi / 180 }  
 tza.traveltimes.adj <- tza.traveltimes * exp(decay*tan(radians(tza.slope.laea))) 
@@ -205,7 +206,8 @@ for (agrodealer in 1:length(tza.agrodealers.shp)) {
    
     # time2agro.1hr.sum used later to calculate population with [0,1,2,3+] agrodealers within 1hr 
     reclassify.matrix.1hr <- matrix(c(-Inf, 1*60, 1, 1*60, Inf, 0), byrow = TRUE, ncol = 3)
-    time2agro.1hr <- reclassify(time2agro, reclassify.matrix.1hr, filename="tmp/time2agro1hr.grd")
+    time2agro.1hr <- reclassify(time2agro, reclassify.matrix.1hr, filename="tmp/time2agro1hr.grd",
+                                overwrite=TRUE)
     time2agro.1hr.sum <- time2agro.1hr.sum + time2agro.1hr
     
     # plot(time2agro.1hr.sum)
@@ -246,7 +248,8 @@ tza.travelzones.2agro <- reclassify(tza.traveltime.2agro, reclassify.matrix, rcl
 # NB - PROJECTION ISSUE: Coverted travel zones to wgs to get realistic population values
 # Use time2agro.1hr.sum calculated in earlier loop
 time2agro.1hr.sum.wgs <- projectRaster(time2agro.1hr.sum, tza.population.wgs, method = 'ngb')
-tza.travelzones.2agro.wgs <- projectRaster(tza.travelzones.2agro, tza.population.wgs, method = 'ngb')
+tza.travelzones.2agro.wgs <- projectRaster(tza.travelzones.2agro, tza.population.wgs, 
+                                           method = 'ngb')
 
 traveltimes.less1hour <- traveltimes.less2hour <- traveltimes.less3hour <- 
     traveltimes.less4hour <- agros.in.1hr.is0 <- agros.in.1hr.is1 <- 
@@ -261,7 +264,7 @@ tza.rural.population <- tza.population.wgs*tza.rural.areas
 for (district.id in 1:length(tza.study.districts)) {
     print(district.id)
     district.rural.pop <- mask(tza.rural.population, tza.study.districts[district.id,], 
-                               filename="tmp/districtruralpop.grd")
+                               filename="tmp/districtruralpop.grd", overwrite=TRUE)
     
     traveltimes.zonal <- zonal( district.rural.pop, tza.travelzones.2agro.wgs, 
                                     fun = "sum", digits = 2, na.rm = TRUE
@@ -284,33 +287,44 @@ for (district.id in 1:length(tza.study.districts)) {
     # Share of rural population with [0,1,2,3+] agrodealers within 1hr travel time
     traveltime.1hr.zonal_ <- zonal( district.rural.pop, time2agro.1hr.sum.wgs, 
                                 fun = "sum", digits = 2, na.rm = TRUE )
-    traveltime.1hr.zonal <- traveltime.1hr.zonal_[
-        apply(traveltime.1hr.zonal_, 1, function(row) all(row !=0 )), ]
+    traveltime.1hr.zonal <- traveltime.1hr.zonal_[which(traveltime.1hr.zonal_[,2] != 0), ]
+    print(traveltime.1hr.zonal_)
     print(traveltime.1hr.zonal)
     
-    for (zone_ in 1:dim(traveltime.1hr.zonal)[1]) {
+    zones.found <- nrow(traveltime.1hr.zonal)
+    if (!is.null(zones.found)) {
+        traveltime.1hr.zonal_1 <- traveltime.1hr.zonal[,1]
+        traveltime.1hr.zonal_2 <- traveltime.1hr.zonal[,2]
+        }
+    if (is.null(zones.found)) {
+        zones.found <- 1
+        traveltime.1hr.zonal_1 <- traveltime.1hr.zonal[1]
+        traveltime.1hr.zonal_2 <- traveltime.1hr.zonal[2]
+        }
+    for (zone_ in 1:zones.found) {
+        if (length(traveltime.1hr.zonal) == 0) break()
         # In 0hr
-        if (traveltime.1hr.zonal[zone_,1] == 0){
+        if (traveltime.1hr.zonal_1[zone_] == 0) {
             agros.in.1hr.is0[district.id] <- agros.in.1hr.is0[district.id] +
-                (traveltime.1hr.zonal[zone_, 2] / district.rural.pop.sum)
+                (traveltime.1hr.zonal_2[zone_] / district.rural.pop.sum)
             }
         
         # In 1hr
-        if (traveltime.1hr.zonal[zone_,1] == 1){
+        if (traveltime.1hr.zonal_1[zone_] == 1) {
             agros.in.1hr.is1[district.id] <- agros.in.1hr.is1[district.id] +
-                (traveltime.1hr.zonal[zone_, 2] / district.rural.pop.sum)
+                (traveltime.1hr.zonal_2[zone_] / district.rural.pop.sum)
             }
         
         # In 2hr
-        if (traveltime.1hr.zonal[zone_,1] == 2){
+        if (traveltime.1hr.zonal_1[zone_] == 2) {
             agros.in.1hr.is2[district.id] <- agros.in.1hr.is2[district.id] +
-                (traveltime.1hr.zonal[zone_, 2] / district.rural.pop.sum)
+                (traveltime.1hr.zonal_2[zone_] / district.rural.pop.sum)
             }
         
         # In 3+hr
-        if (traveltime.1hr.zonal[zone_,1] >= 3){
+        if (traveltime.1hr.zonal_1[zone_] >= 3) {
             agros.in.1hr.is3plus[district.id] <- agros.in.1hr.is3plus[district.id] +
-                (traveltime.1hr.zonal[zone_, 2] / district.rural.pop.sum)
+                (traveltime.1hr.zonal_2[zone_] / district.rural.pop.sum)
             }
         }
     }
@@ -323,6 +337,20 @@ tza.study.districts1@data["0agrosin1hr"] <- agros.in.1hr.is0
 tza.study.districts1@data["1agrosin1hr"] <- agros.in.1hr.is1
 tza.study.districts1@data["2agrosin1hr"] <- agros.in.1hr.is2
 tza.study.districts1@data["3agrosin1hr"] <- agros.in.1hr.is3plus
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+
+# Save output -------------------------------------------------------------
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+shapefile(tza.study.districts1, "output/tzastudydistricts.shp", overwrite=TRUE)
+shapefile(tza.agrodealers.output, "output/tzaagrodealersoutput.shp", overwrite=TRUE)
+
+write.csv(tza.study.districts1@data, "output/tzastudydistricts.csv")
+write.csv(tza.agrodealers.output@data, "output/tzaagrodealersoutput.csv")
+
 #-------------------------------------------------------------------------------------------------#
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
