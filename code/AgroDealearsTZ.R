@@ -227,13 +227,26 @@ tza.dist2agro_ <- pointDistance(tza.agrodealers.shp, lonlat=FALSE)
 tza.dist2agro <- apply(abind::abind(tza.dist2agro_, t(tza.dist2agro_), along = 3), 1:2, 
                    function(x) sum(x, na.rm = TRUE))
 
-# Number of agrodealers within 5km radius
+# Agrodealers within 2km radius
+tza.agrodealers.output@data["AgroIn2KM"] <- apply(tza.dist2agro, 1, 
+                                                  function(x) toString(which(x <= 2000)))
+# Number of agrodealers within 2km radius
+tza.agrodealers.output@data["No_Agro2KM"] <- apply(tza.dist2agro, 1, 
+                                                  function(x) length(which(x <= 2000)))
+
+# Agrodealers within 5km radius
 tza.agrodealers.output@data["AgroIn5KM"] <- apply(tza.dist2agro, 1, 
                                                   function(x) toString(which(x <= 5000)))
+# Number of agrodealers within 5km radius
+tza.agrodealers.output@data["No_Agro5KM"] <- apply(tza.dist2agro, 1, 
+                                                  function(x) length(which(x <= 5000)))
 
-# Number of agrodealers within 10km radius
+# Agrodealers within 10km radius
 tza.agrodealers.output@data["AgroIn10KM"] <- apply(tza.dist2agro, 1, 
                                                    function(x) toString(which(x <= 10000)))
+# Number of agrodealers within 10km radius
+tza.agrodealers.output@data["No_Agro10KM"] <- apply(tza.dist2agro, 1, 
+                                                  function(x) length(which(x <= 10000)))
 
 
 # 9-10 Calculate for each district in study: Travel Time to agrodealear-Within District -----------#
