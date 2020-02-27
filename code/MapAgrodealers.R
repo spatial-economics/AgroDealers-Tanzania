@@ -3,9 +3,16 @@ library(sf)
 library(raster)
 library(ggplot2)
 library(ggsn)
-tza.osm.roads_ <- shapefile("./data/Tanzania/Roads/OpenStreetMap/hotosm_tza_roads_lines.shp")
+
+
+library(rgdal)
+library(geosphere)
+library(dismo)
+library(rgeos)
+
+tza.osm.roads_ <- shapefile("D:/Jordan/AgroDealearsTZ/data/Tanzania/Roads/OpenStreetMap/hotosm_tza_roads_lines.shp")
 wgs.prj <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
-map.agrodealers.csv <- read.csv("output/tzaagrodealersoutput.csv")
+map.agrodealers.csv <- read.csv("D:/Jordan/AgroDealearsTZ/output/tzaagrodealersoutput.csv")
 map.agrodealers.shp <- SpatialPointsDataFrame(data.frame( 
                                                  map.agrodealers.csv$longitude, 
                                                  map.agrodealers.csv$latitude),
@@ -34,7 +41,37 @@ district.names <- data.frame(District=tza.districts$NAME_2,
                             Longitude=coordinates(tza.districts)[,1],
                             Latitude=coordinates(tza.districts)[,2])
 
-# Main Map
+
+# FUNCTION TO CREATE CLUSTERS BASED ON DISTANCE ---------------------------
+
+radiusDist <- function(distance.threshold){
+  # # define the distance threshold, in this case 40 m
+  # distance.threshold <- 100
+  
+  # use the distm function to generate a geodesic distance matrix in meters
+  dist.matrix <- distm(map.agrodealers.shp)
+  # Cluster all points using a hierarchical clustering approach
+  horizontal.clust <- hclust(as.dist(dist.matrix), method="complete")
+  # define clusters based on a tree "height" cutoff "d" and add them to the SpDataFrame
+  map.agrodealers.shp$clust <- cutree(horizontal.clust, h=distance.threshold)
+  # expand the extent of plotting frame
+  map.agrodealers.shp@bbox[] <- as.matrix(extend(extent(map.agrodealers.shp),0.001))
+  # get the centroid coords for each cluster
+  cent <- matrix(ncol=2, nrow=max(map.agrodealers.shp$clust))
+  for (i in 1:max(map.agrodealers.shp$clust)){
+    # gCentroid from the rgeos package
+    cent[i,] <- gCentroid(subset(map.agrodealers.shp, clust == i))@coords
+  }
+  # compute circles around the centroid coords using a 40m radius
+  # from the dismo package
+  ci <- circles(cent, d=distance.threshold, lonlat=T)
+  geom_polygon(data = ci@polygons, mapping = aes(long,lat,group=group), 
+               colour=" green", fill=NA, size = 0.4)
+}
+
+
+# MAP AGRODEALERS PER DISTRICT; GGPLOT2 -----------------------------------
+
 map.all <- ggplot() +
   geom_polygon(data = tza.wards, mapping = aes(long,lat,group=group), 
                colour=" light grey", fill=NA,  size = 0.4, linetype = "dashed") +
@@ -67,9 +104,17 @@ for (area_ in 1:nrow(srvy.districts)) {
   min.y <- area.lim["y","min"]
   max.y <- area.lim["y","max"]
   area.map <- map.all + labs(title = srvy.districts[area_,]$NAME_2) +
-    coord_cartesian(xlim=c(min.x, max.x), ylim=c(min.y, max.y), default = TRUE)  +
+    coord_cartesian(xlim=c(min.x, max.x), ylim=c(min.y, max.y), default = TRUE) +
     geom_polygon(data = srvy.districts[area_,], mapping = aes(long,lat,group=group), 
                  colour=" blue", fill=NA, size = 1, linetype = "dashed") +
+    radiusDist(50) +
+    radiusDist(100) +
+    radiusDist(200) +
+    radiusDist(500) +
+    radiusDist(1000) +
+    radiusDist(2000) +
+    radiusDist(5000) +
+    radiusDist(10000) +
     scalebar(x.min=min.x, x.max=max.x, y.min=min.y, y.max=max.y, 
              dist = ceiling((max.x - min.x)*10) + 1,
              dist_unit = "km", transform = TRUE, model = "WGS84")
@@ -83,8 +128,15 @@ for (area_ in 1:nrow(srvy.districts)) {
 dev.off()
 
 
-plo
 
+
+
+
+
+
+# plot
+# plot(ci@polygons, axes=T)
+# plot(map.agrodealers.shp, col=rainbow(4)[factor(map.agrodealers.shp$clust)], add=T)
 
 
 
