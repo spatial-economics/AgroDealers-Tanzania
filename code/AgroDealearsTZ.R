@@ -151,6 +151,7 @@ tza.transition.adj <- gdistance::geoCorrection(tza.transition, type="r", multpl=
 # CALCULATE TRAVEL TIMES --------------------------------------------------------------------------
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 tza.agrodealers.output <- tza.agrodealers.shp
+# tza.agrodealers.output1 <- tza.agrodealers.output
 # 1. Travel time to nearest district HQ
 
 # 2. Travel time to nearest town of 50,000+ -------------------------------------------------------#
@@ -224,29 +225,60 @@ tza.agrodealers.output@data["AgroIn60min"] <- agroswithin60min
 
 # 5-6, Number of agrodealers within a radius  -----------------------------------------------------#
 tza.dist2agro_ <- pointDistance(tza.agrodealers.shp, lonlat=FALSE)
-tza.dist2agro <- apply(abind::abind(tza.dist2agro_, t(tza.dist2agro_), along = 3), 1:2, 
-                   function(x) sum(x, na.rm = TRUE))
+# tza.dist2agro <- apply(abind::abind(tza.dist2agro_, t(tza.dist2agro_), along = 3), 1:2, 
+#                    function(x) sum(x, na.rm = TRUE))
+tza.dist2agro <- tza.dist2agro_
 
 # Agrodealers within 2km radius
+tza.agrodealers.output@data["AgroIn50M"] <- apply(tza.dist2agro, 1, 
+                                                   function(x) toString(which(x <= 50 & x > 0)))
+# Number of agrodealers within 2km radius
+tza.agrodealers.output@data["No_Agro50M"] <- apply(tza.dist2agro, 1, 
+                                                    function(x) length(which(x <= 50 & x > 0)))
+
+tza.agrodealers.output@data["AgroIn100M"] <- apply(tza.dist2agro, 1, 
+                                                   function(x) toString(which(x <= 100 & x > 0)))
+# Number of agrodealers within 2km radius
+tza.agrodealers.output@data["No_Agro100M"] <- apply(tza.dist2agro, 1, 
+                                                     function(x) length(which(x <= 100 & x > 0)))
+
+tza.agrodealers.output@data["AgroIn200M"] <- apply(tza.dist2agro, 1, 
+                                                   function(x) toString(which(x <= 200 & x > 0)))
+# Number of agrodealers within 2km radius
+tza.agrodealers.output@data["No_Agro200M"] <- apply(tza.dist2agro, 1, 
+                                                     function(x) length(which(x <= 200 & x > 0)))
+
+tza.agrodealers.output@data["AgroIn500M"] <- apply(tza.dist2agro, 1, 
+                                                  function(x) toString(which(x <= 500 & x > 0)))
+# Number of agrodealers within 2km radius
+tza.agrodealers.output@data["No_Agro500M"] <- apply(tza.dist2agro, 1, 
+                                                   function(x) length(which(x <= 500 & x > 0)))
+
+tza.agrodealers.output@data["AgroIn1KM"] <- apply(tza.dist2agro, 1, 
+                                                  function(x) toString(which(x <= 1000 & x > 0)))
+# Number of agrodealers within 2km radius
+tza.agrodealers.output@data["No_Agro1KM"] <- apply(tza.dist2agro, 1, 
+                                                   function(x) length(which(x <= 1000 & x > 0)))
+
 tza.agrodealers.output@data["AgroIn2KM"] <- apply(tza.dist2agro, 1, 
-                                                  function(x) toString(which(x <= 2000)))
+                                                  function(x) toString(which(x <= 2000 & x > 0)))
 # Number of agrodealers within 2km radius
 tza.agrodealers.output@data["No_Agro2KM"] <- apply(tza.dist2agro, 1, 
-                                                  function(x) length(which(x <= 2000)))
+                                                  function(x) length(which(x <= 2000 & x > 0)))
 
 # Agrodealers within 5km radius
 tza.agrodealers.output@data["AgroIn5KM"] <- apply(tza.dist2agro, 1, 
-                                                  function(x) toString(which(x <= 5000)))
+                                                  function(x) toString(which(x <= 5000 & x > 0)))
 # Number of agrodealers within 5km radius
 tza.agrodealers.output@data["No_Agro5KM"] <- apply(tza.dist2agro, 1, 
-                                                  function(x) length(which(x <= 5000)))
+                                                  function(x) length(which(x <= 5000 & x > 0)))
 
 # Agrodealers within 10km radius
 tza.agrodealers.output@data["AgroIn10KM"] <- apply(tza.dist2agro, 1, 
-                                                   function(x) toString(which(x <= 10000)))
+                                                   function(x) toString(which(x <= 10000 & x > 0)))
 # Number of agrodealers within 10km radius
 tza.agrodealers.output@data["No_Agro10KM"] <- apply(tza.dist2agro, 1, 
-                                                  function(x) length(which(x <= 10000)))
+                                                  function(x) length(which(x <= 10000 & x > 0)))
 
 
 # 9-10 Calculate for each district in study: Travel Time to agrodealear-Within District -----------#
@@ -364,6 +396,8 @@ shapefile(tza.agrodealers.output, "output/tzaagrodealersoutput.shp", overwrite=T
 write.csv(tza.study.districts1@data, "output/tzastudydistricts.csv")
 write.csv(tza.agrodealers.output@data, "output/tzaagrodealersoutput.csv")
 
+# write.csv(tza.study.districts1@data, "output/tzastudydistricts1.csv")
+write.csv(tza.agrodealers.output@data, "output/tzaagrodealersoutput.csv")
 #-------------------------------------------------------------------------------------------------#
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
