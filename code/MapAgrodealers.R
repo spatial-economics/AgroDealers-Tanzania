@@ -44,7 +44,7 @@ district.names <- data.frame(District=tza.districts$NAME_2,
 
 # FUNCTION TO CREATE CLUSTERS BASED ON DISTANCE ---------------------------
 
-radiusDist <- function(distance.threshold){
+radiusDist <- function(distance.threshold, color_){
   # # define the distance threshold, in this case 40 m
   # distance.threshold <- 100
   
@@ -62,11 +62,12 @@ radiusDist <- function(distance.threshold){
     # gCentroid from the rgeos package
     cent[i,] <- gCentroid(subset(map.agrodealers.shp, clust == i))@coords
   }
-  # compute circles around the centroid coords using a 40m radius
+  # compute circles around the centroid coords using "distance.threshold" radius
   # from the dismo package
   ci <- circles(cent, d=distance.threshold, lonlat=T)
+  write.csv(ci@presence, "output/ClusterCoords.csv")
   geom_polygon(data = ci@polygons, mapping = aes(long,lat,group=group), 
-               colour=" green", fill=NA, size = 0.4)
+               colour=color_, fill=NA, size = 0.4)
 }
 
 
@@ -83,18 +84,19 @@ map.all <- ggplot() +
   geom_path(data = rd.secondary, aes(long,lat,group=group), colour="brown2", size = 0.2) +
   geom_path(data = rd.primary, aes(long,lat,group=group), colour="brown3", size = 0.3) +
   geom_path(data = rd.trunk, aes(long,lat,group=group), colour="brown4", size = 0.4) +
-  geom_point(data = map.agrodealers.shp@data, aes(x=longitude, y=latitude), shape=19) +
+  geom_point(data = map.agrodealers.shp@data, aes(x=longitude, y=latitude), colour="green", shape=19) +
   geom_text(data = district.names, aes(x=Longitude, y=Latitude, label=District),
             colour = "dark grey", size = 4 )  +
-  geom_text(data = map.agrodealers.csv, aes(x=longitude, y=latitude, label=agroid),
-            colour = "dark grey", size = 4 )  +
+  # geom_text(data = map.agrodealers.csv, aes(x=longitude, y=latitude, label=agroid),
+  #           colour = "dark grey", size = 4 )  +
   coord_equal()+theme_bw()+labs(x="Longitude",y="Latitude") 
 
 dir.create("plot/agromaps/pdf", showWarnings = FALSE, recursive = TRUE)
 dir.create("plot/agromaps/png", showWarnings = FALSE, recursive = TRUE)
 
 
-pdf(file = paste0("plot/agromaps/pdf/", "StudyDistricts", ".pdf"),
+cluster.id <- read.csv("data/ClusterCoords.csv")
+pdf(file = paste0("plot/agromaps/pdf/", "StudyDistricts11", ".pdf"),
     paper = "a4",  )
 for (area_ in 1:nrow(srvy.districts)) {
   # print(bbox(srvy.districts[area_,]))
@@ -107,14 +109,9 @@ for (area_ in 1:nrow(srvy.districts)) {
     coord_cartesian(xlim=c(min.x, max.x), ylim=c(min.y, max.y), default = TRUE) +
     geom_polygon(data = srvy.districts[area_,], mapping = aes(long,lat,group=group), 
                  colour=" blue", fill=NA, size = 1, linetype = "dashed") +
-    radiusDist(50) +
-    radiusDist(100) +
-    radiusDist(200) +
-    radiusDist(500) +
-    radiusDist(1000) +
-    radiusDist(2000) +
-    radiusDist(5000) +
-    radiusDist(10000) +
+    radiusDist(1000, "blue") +
+    geom_text(data = cluster.id, aes(x=Longitude, y=Latitude, label=ClusterID),
+              colour = "black", size = 4 ) +
     scalebar(x.min=min.x, x.max=max.x, y.min=min.y, y.max=max.y, 
              dist = ceiling((max.x - min.x)*10) + 1,
              dist_unit = "km", transform = TRUE, model = "WGS84")
@@ -126,17 +123,6 @@ for (area_ in 1:nrow(srvy.districts)) {
 }
   
 dev.off()
-
-
-
-
-
-
-
-
-# plot
-# plot(ci@polygons, axes=T)
-# plot(map.agrodealers.shp, col=rainbow(4)[factor(map.agrodealers.shp$clust)], add=T)
 
 
 
