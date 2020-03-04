@@ -285,11 +285,6 @@ tza.agrodealers.output@data["No_Agro10KM"] <- apply(tza.dist2agro, 1,
 
 # 11 Cluster Agrodalers ---------------------------------------------------
 
-dist.matrix <- distm(tza.agrodealers.shp_)
-# Cluster all points using a hierarchical clustering approach
-horizontal.clust <- hclust(as.dist(dist.matrix), method="complete")
-# define clusters based on a tree "height" cutoff "distance of 1000m" and add them to the SpDataFrame
-tza.agrodealers.output@data$clust <- cutree(horizontal.clust, h=1000)
 
 
 
