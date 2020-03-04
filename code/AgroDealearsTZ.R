@@ -2,6 +2,7 @@
 
 library(osmdata)
 library(raster)
+library(rgeos)
 library(sf)
 # library(gdistance) # Library called inline to avoid namespace collisions with raster library
 
@@ -73,15 +74,28 @@ tza.population <- projectRaster(tza.population.wgs, tza.landcover.laea, method =
 # Find district hqs ------------------------------------------------------------------------------#
 plot(tza.districts)
 plot(tza.agrodealers.shp_, add=TRUE)
-# unique(extract())
 
-tza.study.districts <- intersect(tza.districts, tza.agrodealers.shp_) 
+# Merge "Mafinga Township Authority" into "Mufindi" and remove "Mkalama"
+tza.study.districts_ <- intersect(tza.districts, tza.agrodealers.shp_)
+mufindi.index <- match("Mufindi", tza.study.districts_$NAME_2 )
+mkalama.index <- match("Mkalama", tza.study.districts_$NAME_2 )
+aggregateList <- list(unlist(lapply(tza.study.districts_$NAME_2[-mkalama.index],
+                                    function(x)
+                                        ifelse(x %in% c("Mafinga Township Authority", 
+                                                        "Mufindi" ), 1, x) )))
+tza.study.districts <- aggregate(tza.study.districts_[-mkalama.index,], 
+                                 by = aggregateList, 
+                                 FUN=function(x) ifelse(length(x) == 2, 
+                                                        x[mufindi.index], x[1])
+                                 )
+
+
 tza.study.population <- mask(tza.population, tza.study.districts, 
                              filename="tmp/tzastudypopulation.grd", 
                              overwrite=TRUE)
 
               # Continue Here to extract dist HQS from towns #
-                        # Mean while use all towns #
+                        # Meanwhile use all towns #
 #-------------------------------------------------------------------------------------------------#
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
