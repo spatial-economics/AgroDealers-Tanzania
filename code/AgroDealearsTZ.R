@@ -281,7 +281,22 @@ tza.agrodealers.output@data["No_Agro10KM"] <- apply(tza.dist2agro, 1,
                                                   function(x) length(which(x <= 10000 & x > 0)))
 
 
-# 9-10 Calculate for each district in study: Travel Time to agrodealear-Within District -----------#
+
+
+# 11 Cluster Agrodalers ---------------------------------------------------
+
+dist.matrix <- distm(tza.agrodealers.shp_)
+# Cluster all points using a hierarchical clustering approach
+horizontal.clust <- hclust(as.dist(dist.matrix), method="complete")
+# define clusters based on a tree "height" cutoff "distance of 1000m" and add them to the SpDataFrame
+tza.agrodealers.output@data$clust <- cutree(horizontal.clust, h=1000)
+
+
+
+
+# 9-10 Calculate for each district in study: ------------------------------
+
+# Travel Time to agrodealear-Within District 
 tza.traveltime.2agro <- gdistance::accCost(tza.transition.adj, tza.agrodealers.shp)
 reclassify.matrix <- matrix(c(-Inf, 1*60, 1,  # <1hour
                               1*60, 2*60, 2,  # <2hour
