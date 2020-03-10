@@ -26,8 +26,8 @@ wgs.prj <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 laea.prj <- CRS("+proj=laea +lat_0=5 +lon_0=20 +x_0=0 +y_0=0 +a=6370997 +b=6370997 
                 +units=m +no_defs")
 
-tza.regions <- getData("GADM", country="TZA", level = 1)
-tza.districts <- getData("GADM", country="TZA", level = 2)
+tza.regions <- getData("GADM", country="TZA", level = 1, path = "data/shp")
+tza.districts <- getData("GADM", country="TZA", level = 2, path = "data/shp")
 #-------------------------------------------------------------------------------------------------#
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
@@ -204,7 +204,7 @@ tza.agrodealers.output <- extract(tza.time2.weather.road, tza.agrodealers.output
 #  Number of agrodealers within a given travel time 
 time2otheragro <- nearestotheragro <- agroswithin30min <- agroswithin60min <- c()
 rmv.fun <- function(a, rmv) a [! a %in% rmv]
-time2agro.1hr.sum <- 0
+time2agro.1hr.sum <- time2agro.30min.sum <- 0
 for (agrodealer in 1:length(tza.agrodealers.shp)) {
     print(paste0("Agrodealer: ", agrodealer))
     time2agro  <- gdistance::accCost(tza.transition.adj, tza.agrodealers.shp[agrodealer, ])
@@ -225,6 +225,12 @@ for (agrodealer in 1:length(tza.agrodealers.shp)) {
                                 overwrite=TRUE)
     time2agro.1hr.sum <- time2agro.1hr.sum + time2agro.1hr
     
+    # time2agro.1hr.sum used later to calculate population with [0,1,2,3+] agrodealers within 1hr 
+    reclassify.matrix.30min <- matrix(c(-Inf, 1*30, 1, 1*30, Inf, 0), byrow = TRUE, ncol = 3)
+    time2agro.30min <- reclassify(time2agro, reclassify.matrix.30min, filename="tmp/time2agro1hr.grd",
+                                overwrite=TRUE)
+    time2agro.30min.sum <- time2agro.30min.sum + time2agro.30min
+    
     # plot(time2agro.1hr.sum)
     # break()
     
@@ -243,30 +249,30 @@ tza.dist2agro_ <- pointDistance(tza.agrodealers.shp, lonlat=FALSE)
 #                    function(x) sum(x, na.rm = TRUE))
 tza.dist2agro <- tza.dist2agro_
 
-# Agrodealers within 2km radius
-tza.agrodealers.output@data["AgroIn50M"] <- apply(tza.dist2agro, 1, 
-                                                   function(x) toString(which(x <= 50 & x > 0)))
-# Number of agrodealers within 2km radius
-tza.agrodealers.output@data["No_Agro50M"] <- apply(tza.dist2agro, 1, 
-                                                    function(x) length(which(x <= 50 & x > 0)))
-
-tza.agrodealers.output@data["AgroIn100M"] <- apply(tza.dist2agro, 1, 
-                                                   function(x) toString(which(x <= 100 & x > 0)))
-# Number of agrodealers within 2km radius
-tza.agrodealers.output@data["No_Agro100M"] <- apply(tza.dist2agro, 1, 
-                                                     function(x) length(which(x <= 100 & x > 0)))
-
-tza.agrodealers.output@data["AgroIn200M"] <- apply(tza.dist2agro, 1, 
-                                                   function(x) toString(which(x <= 200 & x > 0)))
-# Number of agrodealers within 2km radius
-tza.agrodealers.output@data["No_Agro200M"] <- apply(tza.dist2agro, 1, 
-                                                     function(x) length(which(x <= 200 & x > 0)))
-
-tza.agrodealers.output@data["AgroIn500M"] <- apply(tza.dist2agro, 1, 
-                                                  function(x) toString(which(x <= 500 & x > 0)))
-# Number of agrodealers within 2km radius
-tza.agrodealers.output@data["No_Agro500M"] <- apply(tza.dist2agro, 1, 
-                                                   function(x) length(which(x <= 500 & x > 0)))
+# # Agrodealers within 2km radius
+# tza.agrodealers.output@data["AgroIn50M"] <- apply(tza.dist2agro, 1, 
+#                                                    function(x) toString(which(x <= 50 & x > 0)))
+# # Number of agrodealers within 2km radius
+# tza.agrodealers.output@data["No_Agro50M"] <- apply(tza.dist2agro, 1, 
+#                                                     function(x) length(which(x <= 50 & x > 0)))
+# 
+# tza.agrodealers.output@data["AgroIn100M"] <- apply(tza.dist2agro, 1, 
+#                                                    function(x) toString(which(x <= 100 & x > 0)))
+# # Number of agrodealers within 2km radius
+# tza.agrodealers.output@data["No_Agro100M"] <- apply(tza.dist2agro, 1, 
+#                                                      function(x) length(which(x <= 100 & x > 0)))
+# 
+# tza.agrodealers.output@data["AgroIn200M"] <- apply(tza.dist2agro, 1, 
+#                                                    function(x) toString(which(x <= 200 & x > 0)))
+# # Number of agrodealers within 2km radius
+# tza.agrodealers.output@data["No_Agro200M"] <- apply(tza.dist2agro, 1, 
+#                                                      function(x) length(which(x <= 200 & x > 0)))
+# 
+# tza.agrodealers.output@data["AgroIn500M"] <- apply(tza.dist2agro, 1, 
+#                                                   function(x) toString(which(x <= 500 & x > 0)))
+# # Number of agrodealers within 2km radius
+# tza.agrodealers.output@data["No_Agro500M"] <- apply(tza.dist2agro, 1, 
+#                                                    function(x) length(which(x <= 500 & x > 0)))
 
 tza.agrodealers.output@data["AgroIn1KM"] <- apply(tza.dist2agro, 1, 
                                                   function(x) toString(which(x <= 1000 & x > 0)))
@@ -280,19 +286,19 @@ tza.agrodealers.output@data["AgroIn2KM"] <- apply(tza.dist2agro, 1,
 tza.agrodealers.output@data["No_Agro2KM"] <- apply(tza.dist2agro, 1, 
                                                   function(x) length(which(x <= 2000 & x > 0)))
 
-# Agrodealers within 5km radius
-tza.agrodealers.output@data["AgroIn5KM"] <- apply(tza.dist2agro, 1, 
-                                                  function(x) toString(which(x <= 5000 & x > 0)))
-# Number of agrodealers within 5km radius
-tza.agrodealers.output@data["No_Agro5KM"] <- apply(tza.dist2agro, 1, 
-                                                  function(x) length(which(x <= 5000 & x > 0)))
-
-# Agrodealers within 10km radius
-tza.agrodealers.output@data["AgroIn10KM"] <- apply(tza.dist2agro, 1, 
-                                                   function(x) toString(which(x <= 10000 & x > 0)))
-# Number of agrodealers within 10km radius
-tza.agrodealers.output@data["No_Agro10KM"] <- apply(tza.dist2agro, 1, 
-                                                  function(x) length(which(x <= 10000 & x > 0)))
+# # Agrodealers within 5km radius
+# tza.agrodealers.output@data["AgroIn5KM"] <- apply(tza.dist2agro, 1, 
+#                                                   function(x) toString(which(x <= 5000 & x > 0)))
+# # Number of agrodealers within 5km radius
+# tza.agrodealers.output@data["No_Agro5KM"] <- apply(tza.dist2agro, 1, 
+#                                                   function(x) length(which(x <= 5000 & x > 0)))
+# 
+# # Agrodealers within 10km radius
+# tza.agrodealers.output@data["AgroIn10KM"] <- apply(tza.dist2agro, 1, 
+#                                                    function(x) toString(which(x <= 10000 & x > 0)))
+# # Number of agrodealers within 10km radius
+# tza.agrodealers.output@data["No_Agro10KM"] <- apply(tza.dist2agro, 1, 
+#                                                   function(x) length(which(x <= 10000 & x > 0)))
 
 
 
@@ -305,14 +311,18 @@ tza.agrodealers.output@data["No_Agro10KM"] <- apply(tza.dist2agro, 1,
 
 # 9-10 Calculate for each district in study: ------------------------------
 
-# Travel Time to agrodealear-Within District 
-tza.traveltime.2agro <- gdistance::accCost(tza.transition.adj, tza.agrodealers.shp)
-reclassify.matrix <- matrix(c(-Inf, 1*60, 1,  # <1hour
+# Travel Time to any agrodealear-Within District 
+tza.traveltime.2agro <- gdistance::accCost(tza.transition.adj, 
+                                           tza.agrodealers.shp)
+# Classify travel time in 1hr bands
+reclassify.matrix <- matrix(c(-Inf, 0.5*60, 0.5,  # <1hour
+                              0.5*60, 1*60, 1,  # <1hour
                               1*60, 2*60, 2,  # <2hour
                               2*60, 3*60, 3,  # <3hour
                               3*60, 4*60, 4,  # <4hour
                               4*60, Inf, 5 ), byrow = TRUE, ncol = 3)
-tza.travelzones.2agro <- reclassify(tza.traveltime.2agro, reclassify.matrix, rcl = )
+tza.travelzones.2agro <- reclassify(tza.traveltime.2agro, 
+                                    reclassify.matrix)
 
 # NB - PROJECTION ISSUE: Coverted travel zones to wgs to get realistic population values
 # Use time2agro.1hr.sum calculated in earlier loop
@@ -320,9 +330,12 @@ time2agro.1hr.sum.wgs <- projectRaster(time2agro.1hr.sum, tza.population.wgs, me
 tza.travelzones.2agro.wgs <- projectRaster(tza.travelzones.2agro, tza.population.wgs, 
                                            method = 'ngb')
 
-traveltimes.less1hour <- traveltimes.less2hour <- traveltimes.less3hour <- 
-    traveltimes.less4hour <- agros.in.1hr.is0 <- agros.in.1hr.is1 <- 
-    agros.in.1hr.is2 <- agros.in.1hr.is3plus <- numeric(length(tza.study.districts) )
+traveltimes.less30min <- traveltimes.less1hour <- traveltimes.less2hour <- 
+    traveltimes.less3hour <- traveltimes.less4hour <- 
+    agros.in.1hr.is0 <- agros.in.1hr.is1 <- agros.in.1hr.is2 <- 
+    agros.in.1hr.is3 <- agros.in.1hr.is4 <- agros.in.1hr.is5 <- 
+    agros.in.1hr.is2plus <- agros.in.1hr.is3plus <- agros.in.1hr.is4plus <- 
+    agros.in.1hr.is5plus <- numeric(length(tza.study.districts) )
 
 
 tza.rural.areas <- reclassify(tza.population.wgs, matrix(c(-Inf, 1000, 1, 1000, Inf, 0), 
@@ -342,14 +355,20 @@ for (district.id in 1:length(tza.study.districts)) {
     print(traveltimes.zonal)
     
     # Share of rural population further than [1,2,3,4] hour of nearest agrodealer
+    # < 30min
+    traveltimes.less30min[district.id] <- traveltimes.zonal[1, 2] / district.rural.pop.sum
     # <1hour
-    traveltimes.less1hour[district.id] <- traveltimes.zonal[1, 2] / district.rural.pop.sum
+    traveltimes.less1hour[district.id] <- traveltimes.less30min[district.id] +
+        traveltimes.zonal[2, 2] / district.rural.pop.sum
     # <2hour
-    traveltimes.less2hour[district.id] <- traveltimes.zonal[2, 2] / district.rural.pop.sum
+    traveltimes.less2hour[district.id] <- traveltimes.less1hour[district.id] + 
+        traveltimes.zonal[3, 2] / district.rural.pop.sum
     # <3hour
-    traveltimes.less3hour[district.id] <- traveltimes.zonal[3, 2] / district.rural.pop.sum
+    traveltimes.less3hour[district.id] <- traveltimes.less2hour[district.id] +
+        traveltimes.zonal[4, 2] / district.rural.pop.sum
     # <4hour
-    traveltimes.less4hour[district.id] <- traveltimes.zonal[4, 2] / district.rural.pop.sum
+    traveltimes.less4hour[district.id] <- traveltimes.less3hour[district.id] +
+        traveltimes.zonal[5, 2] / district.rural.pop.sum
     
     
     
@@ -372,32 +391,70 @@ for (district.id in 1:length(tza.study.districts)) {
         }
     for (zone_ in 1:zones.found) {
         if (length(traveltime.1hr.zonal) == 0) break()
-        # In 0hr
+        # 0 agros in 1hr
         if (traveltime.1hr.zonal_1[zone_] == 0) {
             agros.in.1hr.is0[district.id] <- agros.in.1hr.is0[district.id] +
                 (traveltime.1hr.zonal_2[zone_] / district.rural.pop.sum)
             }
         
-        # In 1hr
+        # 1 agros in 1hr
         if (traveltime.1hr.zonal_1[zone_] == 1) {
             agros.in.1hr.is1[district.id] <- agros.in.1hr.is1[district.id] +
                 (traveltime.1hr.zonal_2[zone_] / district.rural.pop.sum)
             }
         
-        # In 2hr
+        # 2 agros in 1hr
         if (traveltime.1hr.zonal_1[zone_] == 2) {
             agros.in.1hr.is2[district.id] <- agros.in.1hr.is2[district.id] +
                 (traveltime.1hr.zonal_2[zone_] / district.rural.pop.sum)
-            }
+        }
         
-        # In 3+hr
+        # 3 agros in 1hr
+        if (traveltime.1hr.zonal_1[zone_] == 3) {
+            agros.in.1hr.is3[district.id] <- agros.in.1hr.is3[district.id] +
+                (traveltime.1hr.zonal_2[zone_] / district.rural.pop.sum)
+        }
+        
+        # 4 agros in 1hr
+        if (traveltime.1hr.zonal_1[zone_] == 4) {
+            agros.in.1hr.is4[district.id] <- agros.in.1hr.is4[district.id] +
+                (traveltime.1hr.zonal_2[zone_] / district.rural.pop.sum)
+        }
+        
+        # 5 agros in 1hr
+        if (traveltime.1hr.zonal_1[zone_] == 5) {
+            agros.in.1hr.is5[district.id] <- agros.in.1hr.is5[district.id] +
+                (traveltime.1hr.zonal_2[zone_] / district.rural.pop.sum)
+        }
+        
+        # 2+  agros in 1hr
+        if (traveltime.1hr.zonal_1[zone_] >= 2) {
+            agros.in.1hr.is2plus[district.id] <- agros.in.1hr.is2plus[district.id] +
+                (traveltime.1hr.zonal_2[zone_] / district.rural.pop.sum)
+        }
+        
+        # 3+  agros in 1hr
         if (traveltime.1hr.zonal_1[zone_] >= 3) {
             agros.in.1hr.is3plus[district.id] <- agros.in.1hr.is3plus[district.id] +
                 (traveltime.1hr.zonal_2[zone_] / district.rural.pop.sum)
-            }
+        }
+        
+        # 4+  agros in 1hr
+        if (traveltime.1hr.zonal_1[zone_] >= 4) {
+            agros.in.1hr.is4plus[district.id] <- agros.in.1hr.is4plus[district.id] +
+                (traveltime.1hr.zonal_2[zone_] / district.rural.pop.sum)
+        }
+        
+        # 5+  agros in 1hr
+        if (traveltime.1hr.zonal_1[zone_] >= 5) {
+            agros.in.1hr.is5plus[district.id] <- agros.in.1hr.is5plus[district.id] +
+                (traveltime.1hr.zonal_2[zone_] / district.rural.pop.sum)
+        }
+        
         }
     }
 tza.study.districts1 <- tza.study.districts
+tza.study.districts1@data["travelin30min"] <- traveltimes.less30min
 tza.study.districts1@data["travelin1hr"] <- traveltimes.less1hour
 tza.study.districts1@data["travelin2hr"] <- traveltimes.less2hour
 tza.study.districts1@data["travelin3hr"] <- traveltimes.less3hour
@@ -405,7 +462,13 @@ tza.study.districts1@data["travelin4hr"] <- traveltimes.less4hour
 tza.study.districts1@data["0agrosin1hr"] <- agros.in.1hr.is0
 tza.study.districts1@data["1agrosin1hr"] <- agros.in.1hr.is1
 tza.study.districts1@data["2agrosin1hr"] <- agros.in.1hr.is2
-tza.study.districts1@data["3agrosin1hr"] <- agros.in.1hr.is3plus
+tza.study.districts1@data["3agrosin1hr"] <- agros.in.1hr.is3
+tza.study.districts1@data["4agrosin1hr"] <- agros.in.1hr.is4
+tza.study.districts1@data["5agrosin1hr"] <- agros.in.1hr.is5
+tza.study.districts1@data["ovr2AGin1hr"] <- agros.in.1hr.is2plus
+tza.study.districts1@data["ovr3AGin1hr"] <- agros.in.1hr.is3plus
+tza.study.districts1@data["ovr4AGin1hr"] <- agros.in.1hr.is4plus
+tza.study.districts1@data["ovr5AGin1hr"] <- agros.in.1hr.is5plus
 
 
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
@@ -421,7 +484,7 @@ write.csv(tza.study.districts1@data, "output/tzastudydistricts.csv")
 write.csv(tza.agrodealers.output@data, "output/tzaagrodealersoutput.csv")
 
 # write.csv(tza.study.districts1@data, "output/tzastudydistricts1.csv")
-write.csv(tza.agrodealers.output@data, "output/tzaagrodealersoutput.csv")
+# write.csv(tza.agrodealers.output@data, "output/tzaagrodealersoutput.csv")
 #-------------------------------------------------------------------------------------------------#
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
