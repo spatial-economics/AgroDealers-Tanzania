@@ -171,3 +171,45 @@ for (distrct.id in 2:dim(tza.study.districts)[1]) {
 
 
 
+# input.vector <- list.files("D:/Jordan/AgroDealearsTZ/tmp/Hai", pattern = "*.csv", full.names = TRUE)
+# i <- 0
+# distances_ <- vector(mode = "integer", length = length(input.vector))
+# for (pathh in list.files("D:/Jordan/AgroDealearsTZ/tmp/Hai", pattern = "*.csv", full.names = TRUE)) {
+#   
+#   pp <- gsub(".csv", "", gsub("D:/Jordan/AgroDealearsTZ/tmp/Hai/Hai", "", pathh))
+#   fille <- read.csv(pathh)
+#   distances_[as.integer(pp)] <- fille$cost
+#   
+# }
+# 
+# agrodealears.ntwk$Total_ntwk
+# 
+# write.csv(distances_, "tmp/distvalues/outdists.csv")
+# Data to merge
+Ntwk.data <- read.csv("qgis/outdists_all.csv")
+agrodealears.ntwk <- read.csv("qgis/intermediate.csv")
+
+# Mkalama to Mbulu
+agrodealears.ntwk[96, c("Euc_dist", "agro2road", "Hq2road", "Ntwk_dist", "Total_ntwk")] <-
+  c(30192.88, 14.58509, 197.4586 , 0.7721124558222678 * 111319.5, 0)
+agrodealears.ntwk[108, c("Euc_dist", "agro2road", "Hq2road", "Ntwk_dist", "Total_ntwk")] <-
+  c(27600.38, 33.82899, 197.4586 , 0.7964303683764781 * 111319.5, 0)
+
+agrodealears.ntwk[c(96, 108), c("Euc_dist", "agro2road", "Hq2road", "Ntwk_dist", "Total_ntwk")]
+
+# Replace NA's in Ntwk_dist and Re compute Total_ntwk 
+agrodealears.ntwk[which(is.na(agrodealears.ntwk$Ntwk_dist)),]
+
+# Replace NA's in Ntwk_dist 
+Ntwk.data$Id %in% which(is.na(agrodealears.ntwk$Ntwk_dist))
+agrodealears.ntwk[Ntwk.data$Id, "Ntwk_dist"] <- Ntwk.data$dist_deg * 111319.5
+
+# Re compute Total_ntwk 
+total_ntwk <- agrodealears.ntwk$Total_ntwk
+agrodealears.ntwk[, "Total_ntwk"] <- agrodealears.ntwk$agro2road + agrodealears.ntwk$Hq2road + agrodealears.ntwk$Ntwk_dist
+
+# Save
+agrodealears.ntwk
+write.csv(agrodealears.ntwk[,-1:-3], "output/csv/agro_clstr_hq_dist.csv")
+
+
