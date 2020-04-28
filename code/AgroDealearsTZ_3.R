@@ -1,39 +1,53 @@
-library(sf)
-library(tidygraph)
-library(igraph)
-library(dplyr)
-library(tibble)
-library(ggplot2)
-library(units)
-library(tmap)
-library(osmdata)
-library(rgrass7)
-library(link2GI)
-library(nabor)
 library(raster)
 library(rgdal)
 library(RQGIS3)
+library(geosphere)
 
 
-source('D:/Jordan/AgroDealearsTZ/code/AgroDealearsTZ_functions.R')
+# Data filepaths, QGIS path and processing tool ---------------------------
 
-# data
-agroids.with.district <- read.csv("../output/csv/agro_clstr_disthq.csv")
-# tza.osm.roads_50m <- shapefile("../qgis/hotosm_tza_roads_lines_50m_TPST/hotosm_tza_roads_lines_50m_TPST.shp")
+agroids.with.district.path <- "./doc/intermediate.csv"
+tza.osm.roads_TrPrSeTe.path <- 
+  './qgis/hotosm_tza_roads_lines_1km_TPST/hotosm_tza_roads_lines_1km_TPST.shp'
 
-wgs.prj <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
-tza.regions <- getData("GADM", country="TZA", level = 1, path = "../data/shp")
-tza.districts <- getData("GADM", country="TZA", level = 2, path = "../data/shp")
+qgis.path <- "C:/Program Files/QGIS 3.10"
+qgis.processingtool.search.term <- "shortestpathpointtopoint"
+
+deg2meters <- 111319.5
+
+# Prepare QGIS environment
+set_env(root = qgis.path , dev = FALSE)
+open_app()
+# get_usage(alg = shortestpath.tool) # View tool INPUTS
+
+
+# PREPARE DATA ------------------------------------------------------------
+
+# Find qgis processing tool
+shortestpath.tool <- find_algorithms(search_term = qgis.processingtool.search.term, 
+                                     name_only = TRUE)
 
 # Agrodealers shapefile
-all.agrodealers.shp <-
-  SpatialPointsDataFrame(as.data.frame(agroids.with.district[, c("longitude", "latitude")]), 
-                         agroids.with.district,
-                         proj4string = wgs.prj)
+agroids.with.district <- read.csv(agroids.with.district.path)
+agroids.with.district.shp <- 
+  SpatialPointsDataFrame(as.data.frame(
+    agroids.with.district[, c("longitude", "latitude")]),
+    agroids.with.district,
+    proj4string = wgs.prj)
+
+# District HQs shapefile
 all.districtHQs.shp <-
   SpatialPointsDataFrame(as.data.frame(agroids.with.district[, c("HQ_longitude", "HQ_latitude")]), 
                          agroids.with.district,
                          proj4string = wgs.prj)
+
+# Trunk, Primary Secondary and Tertiary roads 
+tza.osm.roads_TrPrSeTe <- shapefile(tza.osm.roads_TrPrSeTe.path)
+
+
+# Get Study districts
+tza.regions <- getData("GADM", country="TZA", level = 1, path = "./data/shp")
+tza.districts <- getData("GADM", country="TZA", level = 2, path = "./data/shp")
 # Merge "Mafinga Township Authority" into "Mufindi" and remove "Mkalama"
 tza.study.districts_ <- intersect(tza.districts, all.agrodealers.shp)
 mufindi.index <- match("Mufindi", tza.study.districts_$NAME_2 )
@@ -48,146 +62,112 @@ tza.study.districts <- aggregate(tza.study.districts_[-mkalama.index,],
                                                         x[mufindi.index], x[1])
 )
 
+# agroids.with.district.shp@data <-
+# agroids.with.district.shp@data[which(!agroids.with.district.shp$Euc_dist > 0),] 
 
-tza.primarySecondary.road <- 
-  tza.osm.roads_50m[which(tza.osm.roads_50m$highway %in% c("trunk", "primary", 
-                                                     "secondary", "tertiary") ),]
-tza.primary.road <- 
-  tza.osm.roads_50m[which(tza.osm.roads_50m$highway %in% c("trunk", "primary") ),]
-tza.secondary.road <- 
-  tza.osm.roads_50m[which(tza.osm.roads_50m$highway %in% c("secondary", "tertiary") ),]
+# c("Euc_dist", "agro2road",  "Hq2road", "Ntwk_dist", "Total_ntwk"),]
+# data.frame(vector(mode = "integer", length = dim(agroids.with.district.shp@data)[1]),
+#            vector(mode = "integer", length = dim(agroids.with.district.shp@data)[1]),
+#            vector(mode = "integer", length = dim(agroids.with.district.shp@data)[1]),
+#            vector(mode = "integer", length = dim(agroids.with.district.shp@data)[1]),
+#            vector(mode = "integer", length = dim(agroids.with.district.shp@data)[1])
+#            )
 
 
-
-roads.all <- tza.primarySecondary.road
-
-for (distrct.id in 1:dim(tza.study.districts)[1]) {
-  print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
-  print(tza.study.districts@data[distrct.id,"NAME_2"])
-  print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
-  # Get district roads
-  district.bbox.poly <- as(extent(tza.study.districts[distrct.id,]@bbox), "SpatialPolygons")
-  proj4string(district.bbox.poly) <- wgs.prj
-  distrct.primary.road <- raster::intersect(roads.all, district.bbox.poly) 
-  
+# CALCULATE DISTANCES -----------------------------------------------------
+Sys.time()
+i <- 0
+failers <- c()
+for (distrct.id in 2:dim(tza.study.districts)[1]) {
+  # distrct.id <- 1
   # Get district agrodealers
- 
-  distrct.agrodealers <- raster::intersect(all.agrodealers.shp,
-                                           tza.study.districts[1,])
+  distrct.agrodealers <- 
+    raster::intersect(agroids.with.district.shp[
+      which(is.na(agroids.with.district.shp$Ntwk_dist) | agroids.with.district.shp$Ntwk_dist == 0), ],
+      tza.study.districts[distrct.id, ])
+  
+  print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+  print(tza.study.districts@data[distrct.id, "NAME_2"])
+  print("")
   print(as.character(distrct.agrodealers$Region))
   print(as.character(distrct.agrodealers$District))
   print(as.character(distrct.agrodealers$District.HQ))
+  print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
   
-  
-
-  # Give each edge a unique index -------------------------------------------
-  
-  # Segment the roads
-  roads.all.sf <- sf::st_as_sf(roads.all) 
-  # roads.segments <-
-  #   segmentSpatialLines(distrct.primary.road.sf, max.road.segment = 50)
-  # st_coordinates(tza.primary.road.sf)
-  # sf::st_as_sf(roads.segments )
-  # names(roads.segments)
-  
-  edges.nodes.graph <-
-    sf_to_tidygraph(roads.all.sf, directed = FALSE)
-  
-  edges <- edges.nodes.graph[["edges"]]
-  nodes <- edges.nodes.graph[["nodes"]]
-  graph_ <- edges.nodes.graph[["graph"]]
-  
-  # With the activate() verb, we specify if we want to manipulate the edges
-  graph <- graph_  %>%
-    activate(edges) %>%
-    mutate(length = st_length(geometry))
-  
-  distances.graph <- graph_to_distance(graph,)
-  distances <- distances.graph[[1]]
-  graph <- distances.graph[[2]]
-  
-  roads.all.distances <-
-    distance.btw.A.and.B(distrct.agrodealers@data[, c("longitude", "latitude")],
-                         distrct.agrodealers@data[, c("HQ_longitude", "HQ_latitude")],
-                         distances,
-                         graph,
-                         edges,
-                         nodes,
+  for (agro.count in distrct.agrodealers$agroid) {
+    if (!agro.count %in% c(96, 108) ) next()
+    # agro.count <- 138
+    # Set tool parameters
+    shortestpath.tool.params <- get_args_man(alg = shortestpath.tool)
+    shortestpath.tool.params$INPUT <- tza.osm.roads_TrPrSeTe
+    shortestpath.tool.params$OUTPUT <- "tmp/shortestpath.csv"
+    shortestpath.tool.params$START_POINT <-
+      paste0(
+        agroids.with.district.shp$longitude[agro.count],
+        ",",
+        agroids.with.district.shp$latitude[agro.count],
+        " ",
+        "[EPSG:4326]"
+      )
+    shortestpath.tool.params$END_POINT <-
+      paste0(
+        agroids.with.district.shp$HQ_longitude[agro.count],
+        ",",
+        agroids.with.district.shp$HQ_latitude[agro.count],
+        " ",
+        "[EPSG:4326]"
+      )
+    shortestpath.tool.output <- tryCatch({ shortestpath.tool.output <- run_qgis(alg = shortestpath.tool,
+                                                                                params = shortestpath.tool.params,
+                                                                                load_output = TRUE
     )
-  
-  if (distrct.id == 1) {
-    euc_dist <- cbind(distrct.agrodealers@data[, c("agroid", "Region", "District", "cluster.id", "clstr.size" )],
-                roads.all.distances[[1]])
-    net_dist <- cbind(distrct.agrodealers@data[, c("agroid", "Region", "District", "cluster.id", "clstr.size" )],
-                roads.all.distances[[2]])
+    }, error = function(cond){failers <- c(failers, agro.count); return(list(cost=NA))},
+    finally = function(cond){print("moving on")})
+    
+    # shortestpath.tool.output <- run_qgis(alg = shortestpath.tool,
+    #                                     params = shortestpath.tool.params,
+    #                                     load_output = TRUE)
+    network_distance <- as.numeric(shortestpath.tool.output$cost) #* deg2meters
+    
+    if(agroids.with.district.shp$Euc_dist[agro.count] == 0){
+      # agro.count <- 108 96 
+      agroids.with.district.shp$Euc_dist[agro.count]  <- pointDistance(
+        c(
+          agroids.with.district.shp$longitude[agro.count],
+          agroids.with.district.shp$latitude[agro.count]
+        ),
+        c(
+          agroids.with.district.shp$HQ_longitude[agro.count],
+          agroids.with.district.shp$HQ_latitude[agro.count]
+        ),
+        lonlat = TRUE
+      )
+      
+      agroids.with.district.shp$agro2road[agro.count] <- 
+        dist2Line(c(agroids.with.district.shp$longitude[agro.count],
+                    agroids.with.district.shp$latitude[agro.count]),
+                  tza.osm.roads_TrPrSeTe
+        )[1]
+      agroids.with.district.shp$Hq2road[agro.count] <-  
+        dist2Line(c(agroids.with.district.shp$HQ_longitude[agro.count],
+                    agroids.with.district.shp$HQ_latitude[agro.count]),
+                  tza.osm.roads_TrPrSeTe)[1]
+    }
+    
+    agroids.with.district.shp@data[agro.count, c("Ntwk_dist", "Total_ntwk")] <-
+      c(network_distance, 
+        agroids.with.district.shp$agro2road[agro.count] + agroids.with.district.shp$Hq2road[agro.count] + network_distance)
+    write.csv(agroids.with.district.shp@data, "tmp/intermediate.csv")
+    i <- i + 1
+    print(paste(i, " : ", agro.count, " : ",  Sys.time()))
+    
+    
   }
   
-  if (!distrct.id == 1) {
-    euc_dist <- rbind(euc_dist , cbind(distrct.agrodealers@data[, c("agroid", "Region", "District", "cluster.id", "clstr.size" )],
-                                       roads.all.distances[[1]]))
-    net_dist <- rbind(net_dist, cbind(distrct.agrodealers@data[, c("agroid", "Region", "District", "cluster.id", "clstr.size" )],
-                      roads.all.distances[[2]]))
-  }
   
   
-  
-  
-  # if (distrct.id == 3) break()
- } 
-  
-  
-  
-euc_dist 
-net_dist 
-data.frame(euc_dist[,4:6], 
-           net_dist[,6]  )
-  
-all.agrodealers.shp@data$clstr.size
-  
+}
 
 
 
-
-
-
-# ggplot() +
-#   geom_sf(data = graph %>% activate(edges) %>% as_tibble() %>% st_as_sf()) +
-#   geom_sf(data = graph %>% activate(nodes) %>% as_tibble() %>% st_as_sf(), size = 0.5)
-
-
-# ggplot() +
-#   geom_sf(data = graph %>% activate(edges) %>% as_tibble() %>% st_as_sf(), col = 'darkgrey') +
-#   geom_sf(data = graph %>% activate(nodes) %>% as_tibble() %>% st_as_sf(), col = 'darkgrey', size = 0.5) +
-#   geom_sf(data = agrolocation, size = 2, col = 'firebrick') +
-#   geom_sf(data = distrctHQlocation, size = 2, col = 'firebrick') +
-#   geom_sf_label(data = agrolocation, aes(label = 's'), nudge_x = 0.004) +
-#   geom_sf_label(data = distrctHQlocation, aes(label = 'c'), nudge_x = 0.005)
-
-
-# tmap_mode('view')
-# tm_shape(graph %>% activate(edges) %>% as_tibble() %>% st_as_sf()) +
-#   tm_lines() +
-#   tm_shape(graph %>% activate(nodes) %>% as_tibble() %>% st_as_sf()) +
-#   tm_dots() +
-#   tmap_options(basemaps = 'OpenStreetMap')
-
-# ggplot() +
-#   geom_sf(data = graph %>% activate(edges) %>% as_tibble() %>% st_as_sf(), col = 'grey50') + 
-#   geom_sf(data = graph %>% activate(nodes) %>% as_tibble() %>% st_as_sf(), aes(col = betweenness, size = betweenness)) +
-#   scale_colour_viridis_c(option = 'inferno') +
-#   scale_size_continuous(range = c(0,4))
-# 
-# ggplot() +
-#   geom_sf(data = graph %>% activate(edges) %>% as_tibble() %>% st_as_sf(), aes(col = betweenness, size = betweenness)) +
-#   scale_colour_viridis_c(option = 'inferno') +
-#   scale_size_continuous(range = c(0,4))
-
-# ggplot() +
-#   geom_sf(data = graph %>% activate(edges) %>% as_tibble() %>% st_as_sf(), col = 'darkgrey') +
-#   geom_sf(data = graph %>% activate(nodes) %>% as_tibble() %>% st_as_sf(), col = 'darkgrey', size = 0.5) +
-#   geom_sf(data = path_graph %>% activate(edges) %>% as_tibble() %>% st_as_sf(), lwd = 1, col = 'firebrick') +
-#   geom_sf(data = muenster_station, size = 2) +
-#   geom_sf(data = muenster_cathedral, size = 2)  +
-#   geom_sf_label(data = muenster_station, aes(label = 'station'), nudge_x = 0.004) +
-#   geom_sf_label(data = muenster_cathedral, aes(label = 'cathedral'), nudge_x = 0.005)
 
