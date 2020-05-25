@@ -3,6 +3,7 @@
 library(foreign)
 library(raster)
 library(sf)
+library(readxl)
 # library(ggplot2)
 # library(data.table)
 
@@ -19,6 +20,8 @@ stockedfert.dta <- read.dta("data/Esoko safari/data/long_stockedfert_tz.dta")
 stockedmaize.dta <- read.dta("data/Esoko safari/data/long_stockedmaize_tz.dta")
 agrodealers.clustered <- read.csv("data/tzaagrodealersclustered.csv")
 clusters.of.agrodealers <- read.csv("data/ClusterCoords.csv")
+table_1.template <- read_xlsx("data/fwtanzaniaagrodealersclusters/Tanzania paper tables.xlsx", "Table 1")
+table_1.rownames <- read.csv("data/Table_1_rownames.csv")
 
 wgs.prj <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 agro_clstr_hq_dist.csv <- read.csv("D:/Jordan/AgroDealearsTZ/output/csv/agro_clstr_hq_dist.csv")
@@ -80,17 +83,22 @@ for (dist.name1 in tza.study.districts.sf$NAME_2) {
 
 
 
-for (dist.name2 in tza.study.districts.sf$NAME_2) {
+for (dist.name2 in c("Total", tza.study.districts.sf$NAME_2)) {
   if (dist.name2 == "Mbeya Urban") next # Combined with Mbeya rural
   
-  # Subset District data
-  dist.name3 <- dist.name2
-  district.data <- agro_clstr_hq_dist.sf[which(agro_clstr_hq_dist.sf$District %in% dist.name2),]
-  # district.data.shp <- agro_clstr_hq_dist.shp[which(agro_clstr_hq_dist.shp$District %in% dist.name2),]
   
+  # Subset District data
+  dist.name4 <- dist.name3 <- dist.name2
+  if(dist.name2 == "Total") dist.name4 <- tza.study.districts.sf$NAME_2
+  
+  district.data <- 
+    agro_clstr_hq_dist.sf[which(agro_clstr_hq_dist.sf$District %in% dist.name4),]
+  
+ 
   if (dist.name2 == "Mbeya Rural") {
-    district.data <- agro_clstr_hq_dist.sf[which(agro_clstr_hq_dist.sf$District %in% c("Mbeya Rural", "Mbeya Urban")),]
-    district.data.shp <- agro_clstr_hq_dist.shp[which(agro_clstr_hq_dist.shp$District %in% c("Mbeya Rural", "Mbeya Urban")),]
+    district.data <- 
+      agro_clstr_hq_dist.sf[which(
+        agro_clstr_hq_dist.sf$District %in% c("Mbeya Rural", "Mbeya Urban")),]
     dist.name3 <- "Mbeya"
   }
   distr.agrosid <- district.data$agroid
@@ -229,14 +237,14 @@ for (dist.name2 in tza.study.districts.sf$NAME_2) {
   table_1[[dist.name3 ]][["Total_unique_fertilizer_types"]] <- length(unique(dstrct.fert.entrys$fert_name))
   # 7 (ii)
   # Available fertilizers per shop (average)
-  table_1[[dist.name3 ]][["Average_maize_varty_per_shop"]] <-
+  table_1[[dist.name3 ]][["Average_fertilizer_type_per_shop"]] <-
     mean(sapply(unique(dstrct.fert.entrys$agroid),
                 function(x){
                   length(dstrct.fert.entrys$fert_name[which(dstrct.fert.entrys$agroid == x)])}), 
          na.rm = TRUE)
   # 7 (iii)
   # Standard deviation	
-  table_1[[dist.name3 ]][["Standard_deviation_maize_varty_per_shop"]] <-
+  table_1[[dist.name3 ]][["Standard_deviation_fertilizers_type_per_shop"]] <-
     sd(sapply(unique(dstrct.fert.entrys$agroid),
               function(x) {
                 length(dstrct.fert.entrys$fert_name[which(dstrct.fert.entrys$agroid == x)])
@@ -252,7 +260,7 @@ for (dist.name2 in tza.study.districts.sf$NAME_2) {
   
   district.rural.pop <- 
     mask(tza.rural.population, 
-         tza.study.districts[which(grepl(dist.name3, tza.study.districts$NAME_2)),],
+         tza.study.districts[which(grepl(dist.name4, tza.study.districts$NAME_2)),],
          filename="tmp/districtruralpop2.grd", overwrite=TRUE)
     
     traveltimes.zonal <- zonal( district.rural.pop, tza.travelzones.2agro.wgs, 
@@ -280,5 +288,26 @@ for (dist.name2 in tza.study.districts.sf$NAME_2) {
     
     
 }
+
+
+table_1.template.df <- as.data.frame(table_1.template)
+for (tabledistrct in names(table_1)) {
+  for (tablerow in names(table_1[[tabledistrct]])){
+     
+    table_1.template.df[which(table_1.rownames$Table %in% tablerow),
+                        which(grepl(tabledistrct, names(table_1.template)))] <- 
+      table_1[[tabledistrct]][[tablerow]]
+      
+    print(paste(which(grepl(tabledistrct, names(table_1.template))), ": ", tabledistrct ))
+    print(paste0(which(table_1.rownames$Table %in% tablerow), ": ", tablerow))
+  }
+}
+table_1.template.df
+
+
+write.csv(table_1.template.df, "tables/table_1.csv")
+
+
+
 
 

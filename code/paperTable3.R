@@ -19,7 +19,8 @@ clusters.of.agrodealers <- read.csv("data/ClusterCoords.csv")
 
 agro_clstr_hq_dist.csv <- read.csv("D:/Jordan/AgroDealearsTZ/output/csv/agro_clstr_hq_dist.csv")
 maize_vrty_categories.csv <- read.csv("data/MaizeVarietyCategories.csv")
-
+table_3.template <- read_xlsx("data/fwtanzaniaagrodealersclusters/Tanzania paper tables.xlsx", "Table 3")
+table_3.rownames <- read.csv("data/Table_3_rownames.csv")
 
 # Prepare data ------------------------------------------------------------
 
@@ -47,11 +48,14 @@ files.dta <- sapply(basename(files.dta_folder),
 
 
 
-for (compLevel in unique(sort(agro_clstr_hq_dist.sf$compLevel))) {
+for (compLevel in c("Total", unique(agro_clstr_hq_dist.sf$competition))) {
   table_3[[compLevel]] <- list()
   # Total	No competition	1-2 competitors	3-5 competitors	6-10 competitors	>10 competitors	Comments
+  
+  compLevel1 <- compLevel
+  if(compLevel == "Total") compLevel1 <- unique(agro_clstr_hq_dist.sf$competition)
   compLevel.data <- agro_clstr_hq_dist.sf[which(
-    agro_clstr_hq_dist.sf$compLevel %in% compLevel),]
+    agro_clstr_hq_dist.sf$competition %in% compLevel1),]
   
   # Maize seed
   # M 1 (i)
@@ -79,7 +83,7 @@ for (compLevel in unique(sort(agro_clstr_hq_dist.sf$compLevel))) {
   gvmnt.vrty <- 
     maize_vrty_categories.csv$Maize_variety[which(
       maize_vrty_categories.csv$Category %in% "Government")]
-  table_3[[compLevel]][["Government varieties > 1"]] <-
+  table_3[[compLevel]][["Government varieties >= 1"]] <-
     sum(sapply(compLevel.data$agroid,
               function(x) {
                 x.vrtys <- files.dta$long_stockedmaize_tz.dta$maizevar_stock[which(
@@ -94,7 +98,7 @@ for (compLevel in unique(sort(agro_clstr_hq_dist.sf$compLevel))) {
   ntnl.rgnl.vrty <-
     maize_vrty_categories.csv$Maize_variety[which(
       maize_vrty_categories.csv$Category %in% "National_Regional")]
-  table_3[[compLevel]][["National_Regional varieties > 1"]] <-
+  table_3[[compLevel]][["National_Regional varieties >= 1"]] <-
     sum(sapply(compLevel.data$agroid,
                function(x) {
                  x.vrtys <-
@@ -109,7 +113,7 @@ for (compLevel in unique(sort(agro_clstr_hq_dist.sf$compLevel))) {
   intnl.vrty <-
     maize_vrty_categories.csv$Maize_variety[which(
       maize_vrty_categories.csv$Category %in% "International")]
-  table_3[[compLevel]][["International varieties > 1"]] <-
+  table_3[[compLevel]][["International varieties >= 1"]] <-
     sum(sapply(compLevel.data$agroid,
                function(x) {
                  x.vrtys <-
@@ -131,7 +135,7 @@ for (compLevel in unique(sort(agro_clstr_hq_dist.sf$compLevel))) {
       maize_vrty_categories.csv$Category %in% "Government" &
         maize_vrty_categories.csv$N30 %in% 1
     )]
-  table_3[[compLevel]][["MEAN_Seed price per 2kg (in TSH)"]] <-
+  table_3[[compLevel]][["Government:MEAN_Seed price per 2kg (in TSH)"]] <-
     mean(sapply(compLevel.data$agroid,
                 function(x) {
                   x.vrtys <-
@@ -145,7 +149,7 @@ for (compLevel in unique(sort(agro_clstr_hq_dist.sf$compLevel))) {
   
   # M 3 (i) b
   # standard deviation
-  table_3[[compLevel]][["SD_Seed price per 2kg (in TSH)"]] <-
+  table_3[[compLevel]][["Government:SD_Seed price per 2kg (in TSH)"]] <-
     mean(sapply(compLevel.data$agroid,
                 function(x) {
                   x.vrtys <-
@@ -164,7 +168,7 @@ for (compLevel in unique(sort(agro_clstr_hq_dist.sf$compLevel))) {
       maize_vrty_categories.csv$Category %in% "National_Regional" &
         maize_vrty_categories.csv$N30 %in% 1
     )]
-  table_3[[compLevel]][["MEAN_Seed price per 2kg (in TSH)"]] <-
+  table_3[[compLevel]][["National_Regional:MEAN_Seed price per 2kg (in TSH)"]] <-
     mean(sapply(compLevel.data$agroid,
                 function(x) {
                   x.vrtys <-
@@ -178,7 +182,7 @@ for (compLevel in unique(sort(agro_clstr_hq_dist.sf$compLevel))) {
   
   # M 3 (ii) b
   # standard deviation
-  table_3[[compLevel]][["SD_Seed price per 2kg (in TSH)"]] <-
+  table_3[[compLevel]][["National_Regional:SD_Seed price per 2kg (in TSH)"]] <-
     mean(sapply(compLevel.data$agroid,
                 function(x) {
                   x.vrtys <-
@@ -197,7 +201,7 @@ for (compLevel in unique(sort(agro_clstr_hq_dist.sf$compLevel))) {
       maize_vrty_categories.csv$Category %in% "International" &
         maize_vrty_categories.csv$N30 %in% 1
     )]
-  table_3[[compLevel]][["MEAN_Seed price per 2kg (in TSH)"]] <-
+  table_3[[compLevel]][["International:MEAN_Seed price per 2kg (in TSH)"]] <-
     mean(sapply(compLevel.data$agroid,
                 function(x) {
                   x.vrtys <-
@@ -211,7 +215,7 @@ for (compLevel in unique(sort(agro_clstr_hq_dist.sf$compLevel))) {
   
   # M 3 (iii) b
   # standard deviation
-  table_3[[compLevel]][["SD_Seed price per 2kg (in TSH)"]] <-
+  table_3[[compLevel]][["International:SD_Seed price per 2kg (in TSH)"]] <-
     sd(sapply(compLevel.data$agroid,
               function(x) {
                 x.vrtys <-
@@ -236,7 +240,7 @@ for (compLevel in unique(sort(agro_clstr_hq_dist.sf$compLevel))) {
                    ),]
                  dim(x.vrtys)[1]
                }))
-  table_3[[compLevel]][["Reliable supply (% very reliable)Government varieties >30%"]] <-
+  table_3[[compLevel]][["Reliable supply (% very reliable):Government varieties >30%"]] <-
     gvmnt.reliable.supply_total * 100 / dim(files.dta$long_stockedmaize_tz.dta[which(
       files.dta$long_stockedmaize_tz.dta$agroid %in% compLevel.data$agroid &
         files.dta$long_stockedmaize_tz.dta$maizevar_stock %in% gvmnt.vrty_30
@@ -256,7 +260,7 @@ for (compLevel in unique(sort(agro_clstr_hq_dist.sf$compLevel))) {
                    ),]
                  dim(x.vrtys)[1]
                }))
-  table_3[[compLevel]][["Reliable supply (% very reliable)Government varieties >30%"]] <-
+  table_3[[compLevel]][["Reliable supply (% very reliable):National_Regional >30%"]] <-
     ntnl.rgnl.reliable.supply_total * 100 / dim(files.dta$long_stockedmaize_tz.dta[which(
       files.dta$long_stockedmaize_tz.dta$agroid %in% compLevel.data$agroid &
         files.dta$long_stockedmaize_tz.dta$maizevar_stock %in% ntnl.rgnl.vrty_30
@@ -275,7 +279,7 @@ for (compLevel in unique(sort(agro_clstr_hq_dist.sf$compLevel))) {
                    ),]
                  dim(x.vrtys)[1]
                }))
-  table_3[[compLevel]][["Reliable supply (% very reliable)Government varieties >30%"]] <-
+  table_3[[compLevel]][["Reliable supply (% very reliable):International varieties >30%"]] <-
     intnl.reliable.supply_total * 100 / dim(files.dta$long_stockedmaize_tz.dta[which(
       files.dta$long_stockedmaize_tz.dta$agroid %in% compLevel.data$agroid &
         files.dta$long_stockedmaize_tz.dta$maizevar_stock %in% intnl.vrty_30
@@ -296,7 +300,7 @@ for (compLevel in unique(sort(agro_clstr_hq_dist.sf$compLevel))) {
   
   # F 1 (ii)
   # standard deviation
-  table_3[[compLevel]][["standard deviation varieties per agro-dealer"]] <-
+  table_3[[compLevel]][["standard deviation Fertilizer types per agro-dealer"]] <-
     sd(sapply(compLevel.data$agroid,
               function(x) {
                 length(files.dta$long_stockedfert_tz.dta$fert_name[which(
@@ -524,13 +528,19 @@ for (compLevel in unique(sort(agro_clstr_hq_dist.sf$compLevel))) {
 str(table_3)
 
 
+table_3.template.df <- as.data.frame(table_3.template)
+for (tabledistrct in names(table_3)) {
+  for (tablerow in names(table_3[[tabledistrct]])){
+    
+    table_3.template.df[which(table_3.rownames$Table %in% tablerow),
+                        which(grepl(tabledistrct, names(table_3.template)))] <- 
+      table_3[[tabledistrct]][[tablerow]]
+    
+    print(paste(which(grepl(tabledistrct, names(table_3.template))), ": ", tabledistrct ))
+    print(paste0(which(table_3.rownames$Table %in% tablerow), ": ", tablerow))
+  }
+}
 
-# 
-# table_3[[compLevel]][["standard deviation varieties per agro-dealer"]] <-
-#     sum(sapply(compLevel.data$agroid,
-#                function(x) {
-#                  if (identical(unique(files.dta$long_stockedfert_tz.dta$fert_name[which(
-#                    files.dta$long_stockedfert_tz.dta$agroid %in% x )]), "SA (21:0:0)")){
-#                    return(1)
-#                  } else return(0)
-#                }))/dim(compLevel.data)[1]*100
+table_3.template.df
+write.csv(table_3.template.df, "tables/table_3.csv")
+
