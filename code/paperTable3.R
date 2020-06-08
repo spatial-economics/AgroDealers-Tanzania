@@ -3,6 +3,7 @@
 library(foreign)
 library(raster)
 library(sf)
+library(readxl)
 # library(ggplot2)
 # library(data.table)
 
@@ -527,7 +528,7 @@ for (compLevel in c("Total", unique(agro_clstr_hq_dist.sf$competition))) {
 
 str(table_3)
 
-
+names(table_3)[which(names(table_3) == "> 10 competitors")] <- ">10 competitors"
 table_3.template.df <- as.data.frame(table_3.template)
 for (tabledistrct in names(table_3)) {
   for (tablerow in names(table_3[[tabledistrct]])){
