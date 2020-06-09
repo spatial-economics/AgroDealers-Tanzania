@@ -10,7 +10,7 @@ library(geosphere)
 library(dismo)
 library(rgeos)
 
-tza.osm.roads_ <- shapefile("D:/Jordan/AgroDealearsTZ/data/Tanzania/Roads/OpenStreetMap/hotosm_tza_roads_lines.shp")
+# tza.osm.roads_ <- shapefile("D:/Jordan/AgroDealearsTZ/data/Tanzania/Roads/OpenStreetMap/hotosm_tza_roads_lines.shp")
 wgs.prj <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 map.agrodealers.csv <- read.csv("D:/Jordan/AgroDealearsTZ/output/tzaagrodealersoutput.csv")
 map.agrodealers.shp <- SpatialPointsDataFrame(data.frame( 
@@ -20,11 +20,23 @@ map.agrodealers.shp <- SpatialPointsDataFrame(data.frame(
                                               proj4string = wgs.prj
   )
 
+# Tanzania shapefiles
 dir.create( path =  "data/shp", showWarnings = FALSE, recursive = TRUE)
 tza.international <- getData("GADM", country="TZA", level = 0, path = "data/shp")
 tza.regions <- getData("GADM", country="TZA", level = 1, path = "data/shp")
 tza.districts <- getData("GADM", country="TZA", level = 2, path = "data/shp")
 tza.wards <- getData("GADM", country="TZA", level = 3, path = "data/shp")
+
+# Tanzania Neighbours Shapefiles
+
+ken.international <- getData("GADM", country="KEN", level = 0, path = "data/shp")
+uga.international <- getData("GADM", country="UGA", level = 0, path = "data/shp")
+rwa.international <- getData("GADM", country="RWA", level = 0, path = "data/shp")
+bdi.international <- getData("GADM", country="BDI", level = 0, path = "data/shp")
+cod.international <- getData("GADM", country="COD", level = 0, path = "data/shp")
+zmb.international <- getData("GADM", country="ZMB", level = 0, path = "data/shp")
+mwi.international <- getData("GADM", country="MWI", level = 0, path = "data/shp")
+moz.international <- getData("GADM", country="MOZ", level = 0, path = "data/shp")
 
 srvy.districts <- intersect(tza.districts, map.agrodealers.shp)
 srvy.wards <- intersect(tza.wards, map.agrodealers.shp)
@@ -78,8 +90,26 @@ map.all <- ggplot() +
                colour=" light grey", fill=NA,  size = 0.4, linetype = "dashed") +
   geom_polygon(data = tza.districts, mapping = aes(long,lat,group=group), 
                colour=" dark grey", fill=NA, size = 1, linetype = "dashed") +
+  
   geom_polygon(data = tza.international, mapping = aes(long,lat,group=group), 
                colour=" black", fill=NA, size = 1.2) +
+  geom_polygon(data = ken.international, mapping = aes(long,lat,group=group), 
+               colour=" black", fill=NA, size = 1.2) +
+  geom_polygon(data = uga.international, mapping = aes(long,lat,group=group), 
+               colour=" black", fill=NA, size = 1.2) +
+  geom_polygon(data = rwa.international, mapping = aes(long,lat,group=group), 
+               colour=" black", fill=NA, size = 1.2) +
+  geom_polygon(data = bdi.international, mapping = aes(long,lat,group=group), 
+               colour=" black", fill=NA, size = 1.2) +
+  geom_polygon(data = cod.international, mapping = aes(long,lat,group=group), 
+               colour=" black", fill=NA, size = 1.2) +
+  geom_polygon(data = zmb.international, mapping = aes(long,lat,group=group), 
+               colour=" black", fill=NA, size = 1.2) +
+  geom_polygon(data = mwi.international, mapping = aes(long,lat,group=group), 
+               colour=" black", fill=NA, size = 1.2) +
+  geom_polygon(data = moz.international, mapping = aes(long,lat,group=group), 
+               colour=" black", fill=NA, size = 1.2) +
+  
   geom_path(data = rd.tertiary, aes(long,lat,group=group), colour="brown1", size = 0.1)+
   geom_path(data = rd.secondary, aes(long,lat,group=group), colour="brown2", size = 0.2) +
   geom_path(data = rd.primary, aes(long,lat,group=group), colour="brown3", size = 0.3) +
@@ -89,14 +119,21 @@ map.all <- ggplot() +
             colour = "dark grey", size = 4 )  +
   # geom_text(data = map.agrodealers.csv, aes(x=longitude, y=latitude, label=agroid),
   #           colour = "dark grey", size = 4 )  +
-  coord_equal()+theme_bw()+labs(x="Longitude",y="Latitude") 
+  theme(panel.border = element_rect(fill = NA, size = 0.5, linetype = 'solid',
+                                    colour = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_rect(fill = "lightblue",
+                                        colour = "lightblue",
+                                        size = 0.5, linetype = "solid"))+
+  coord_equal()+ labs(x="Longitude",y="Latitude") 
 
 dir.create("plot/agromaps/pdf", showWarnings = FALSE, recursive = TRUE)
 dir.create("plot/agromaps/png", showWarnings = FALSE, recursive = TRUE)
 
 
 cluster.id <- read.csv("data/ClusterCoords.csv")
-pdf(file = paste0("plot/agromaps/pdf/", "StudyDistricts11", ".pdf"),
+pdf(file = paste0("plot/agromaps/pdf/", "StudyDistrictsClusters", ".pdf"),
     paper = "a4",  )
 for (area_ in 1:nrow(srvy.districts)) {
   # print(bbox(srvy.districts[area_,]))
