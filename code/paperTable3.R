@@ -53,11 +53,17 @@ for (compLevel in c("Total", unique(agro_clstr_hq_dist.sf$competition))) {
   table_3[[compLevel]] <- list()
   # Total	No competition	1-2 competitors	3-5 competitors	6-10 competitors	>10 competitors	Comments
   
-  compLevel1 <- compLevel
+  compLevel1 <- compLevel #Level of competion
+  # Select all if compLevel is Total
   if(compLevel == "Total") compLevel1 <- unique(agro_clstr_hq_dist.sf$competition)
+  
+  # select Data rows for the compLevel
   compLevel.data <- agro_clstr_hq_dist.sf[which(
     agro_clstr_hq_dist.sf$competition %in% compLevel1),]
+
   
+  
+# Analysis of the compLevel data ------------------------------------------
   # Maize seed
   # M 1 (i)
   # # varieties per agro-dealer							take into account all varieties
@@ -76,44 +82,53 @@ for (compLevel in c("Total", unique(agro_clstr_hq_dist.sf$competition))) {
                 length(files.dta$long_stockedmaize_tz.dta$maizevar_stock[which(
                   files.dta$long_stockedmaize_tz.dta$agroid %in% x)])
               }), na.rm = TRUE)
+  
   # M 2
   # At least one variety available of (%)
+  # (At this competition Level)
   # M 2 (i)
   # Government varieties							all varieties
-  
   gvmnt.vrty <- 
-    maize_vrty_categories.csv$Maize_variety[which(
-      maize_vrty_categories.csv$Category %in% "Government")]
+    unlist(strsplit(maize_vrty_categories.csv$Maize_variety3[which(
+                           maize_vrty_categories.csv$Category %in% "Government")],
+                    ";"))
+  
   table_3[[compLevel]][["Government varieties >= 1"]] <-
     sum(sapply(compLevel.data$agroid,
               function(x) {
                 x.vrtys <- files.dta$long_stockedmaize_tz.dta$maizevar_stock[which(
                   files.dta$long_stockedmaize_tz.dta$agroid %in% x)]
+                
                 length(x.vrtys[which(x.vrtys %in% gvmnt.vrty)])
                 
-              }) >= 1)
+              }) >= 1) / length(compLevel.data$agroid)*100
 
   
   # M 2 (ii)
   # Local companies							all varieties
   ntnl.rgnl.vrty <-
-    maize_vrty_categories.csv$Maize_variety[which(
-      maize_vrty_categories.csv$Category %in% "National_Regional")]
+    unlist(strsplit(maize_vrty_categories.csv$Maize_variety3[which(
+                         maize_vrty_categories.csv$Category %in% "National_Regional")],
+                    ";"))
+  
   table_3[[compLevel]][["National_Regional varieties >= 1"]] <-
     sum(sapply(compLevel.data$agroid,
                function(x) {
                  x.vrtys <-
                    files.dta$long_stockedmaize_tz.dta$maizevar_stock[which(
                      files.dta$long_stockedmaize_tz.dta$agroid %in% x)]
+                 
                  length(x.vrtys[which(x.vrtys %in% ntnl.rgnl.vrty)])
                  
-               }) >= 1)
+               }) >= 1) / length(compLevel.data$agroid)*100
   
   # M 2 (iii)
   # International companies							all varieties
-  intnl.vrty <-
-    maize_vrty_categories.csv$Maize_variety[which(
-      maize_vrty_categories.csv$Category %in% "International")]
+  # (select international varieties and split elements with 2 or more varitie- separated by ;)
+  intnl.vrty <- 
+    unlist(strsplit(maize_vrty_categories.csv$Maize_variety3[ 
+                        which(maize_vrty_categories.csv$Category %in% "International")],
+                    ";"))
   table_3[[compLevel]][["International varieties >= 1"]] <-
     sum(sapply(compLevel.data$agroid,
                function(x) {
@@ -122,7 +137,7 @@ for (compLevel in c("Total", unique(agro_clstr_hq_dist.sf$competition))) {
                      files.dta$long_stockedmaize_tz.dta$agroid %in% x)]
                  length(x.vrtys[which(x.vrtys %in% intnl.vrty)])
                  
-               }) >= 1)
+               }) >= 1) / length(compLevel.data$agroid)*100
   
   
   
