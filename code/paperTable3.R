@@ -248,62 +248,45 @@ for (compLevel in c("Total", unique(agro_clstr_hq_dist.sf$competition))) {
   # M 4 (i)
   # Government varieties							varieties available in 10% of stores, see word file for the list
   gvmnt.reliable.supply_total <-
-    sum(sapply(compLevel.data$agroid,
-               function(x) {
-                 x.vrtys <-
-                   files.dta$long_stockedmaize_tz.dta[which(
-                     files.dta$long_stockedmaize_tz.dta$agroid %in% x &
-                       files.dta$long_stockedmaize_tz.dta$mzvar_rely %in% "Very reliable" &
-                       files.dta$long_stockedmaize_tz.dta$maizevar_stock %in% gvmnt.vrty_30
-                   ),]
-                 dim(x.vrtys)[1]
-               }))
+    files.dta$long_stockedmaize_tz.dta$mzvar_rely[
+      which(files.dta$long_stockedmaize_tz.dta$agroid %in% compLevel.data$agroid &
+              files.dta$long_stockedmaize_tz.dta$maizevar_stock %in% gvmnt.vrty_30
+                   )]
   
   table_3[[compLevel]][["Reliable supply (% very reliable):Government varieties >30%"]] <-
-    gvmnt.reliable.supply_total * 100 / dim(files.dta$long_stockedmaize_tz.dta[which(
-      files.dta$long_stockedmaize_tz.dta$agroid %in% compLevel.data$agroid &
-        files.dta$long_stockedmaize_tz.dta$maizevar_stock %in% gvmnt.vrty_30
-    ), ])[1]
+    length(
+      gvmnt.reliable.supply_total[gvmnt.reliable.supply_total %in% "Very reliable"]) * 
+    100 / length(gvmnt.reliable.supply_total)
   
   
   # M 4 (ii)
   # Local companies							varieties available in 10% of stores, see word file for the list
   ntnl.rgnl.reliable.supply_total <-
-    sum(sapply(compLevel.data$agroid,
-               function(x) {
-                 x.vrtys <-
-                   files.dta$long_stockedmaize_tz.dta[which(
-                     files.dta$long_stockedmaize_tz.dta$agroid %in% x &
-                       files.dta$long_stockedmaize_tz.dta$mzvar_rely %in% "Very reliable" &
-                       files.dta$long_stockedmaize_tz.dta$maizevar_stock %in% ntnl.rgnl.vrty_30
-                   ),]
-                 dim(x.vrtys)[1]
-               }))
+    files.dta$long_stockedmaize_tz.dta$mzvar_rely[
+      which(files.dta$long_stockedmaize_tz.dta$agroid %in% compLevel.data$agroid &
+              files.dta$long_stockedmaize_tz.dta$maizevar_stock %in% ntnl.rgnl.vrty_30
+                   )]
+  
   
   table_3[[compLevel]][["Reliable supply (% very reliable):National_Regional >30%"]] <-
-    ntnl.rgnl.reliable.supply_total * 100 / dim(files.dta$long_stockedmaize_tz.dta[which(
-      files.dta$long_stockedmaize_tz.dta$agroid %in% compLevel.data$agroid &
-        files.dta$long_stockedmaize_tz.dta$maizevar_stock %in% ntnl.rgnl.vrty_30
-    ), ])[1]
+    length(
+      ntnl.rgnl.reliable.supply_total[ntnl.rgnl.reliable.supply_total %in% "Very reliable"]) * 
+    100 / length(ntnl.rgnl.reliable.supply_total)
+  
   
   # M 4 (iii)
   # International companies							varieties available in 10% of stores, see word file for the list
   intnl.reliable.supply_total <-
-    sum(sapply(compLevel.data$agroid,
-               function(x) {
-                 x.vrtys <-
-                   files.dta$long_stockedmaize_tz.dta[which(
-                     files.dta$long_stockedmaize_tz.dta$agroid %in% x &
-                       files.dta$long_stockedmaize_tz.dta$mzvar_rely %in% "Very reliable" &
-                       files.dta$long_stockedmaize_tz.dta$maizevar_stock %in% intnl.vrty_30
-                   ),]
-                 dim(x.vrtys)[1]
-               }))
+    files.dta$long_stockedmaize_tz.dta$mzvar_rely[
+      which(files.dta$long_stockedmaize_tz.dta$agroid %in% compLevel.data$agroid &
+              files.dta$long_stockedmaize_tz.dta$maizevar_stock %in% intnl.vrty_30
+                   )]
+                 
   table_3[[compLevel]][["Reliable supply (% very reliable):International varieties >30%"]] <-
-    intnl.reliable.supply_total * 100 / dim(files.dta$long_stockedmaize_tz.dta[which(
-      files.dta$long_stockedmaize_tz.dta$agroid %in% compLevel.data$agroid &
-        files.dta$long_stockedmaize_tz.dta$maizevar_stock %in% intnl.vrty_30
-    ), ])[1]
+    length(
+      intnl.reliable.supply_total[intnl.reliable.supply_total %in% "Very reliable"]) * 
+    100 / length(intnl.reliable.supply_total)
+  
   
   
   # Fertilizer Analysis -----------------------------------------------------
