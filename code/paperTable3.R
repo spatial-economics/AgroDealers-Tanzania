@@ -317,11 +317,12 @@ for (compLevel in c("Total", unique(agro_clstr_hq_dist.sf$competition))) {
   table_3[[compLevel]][["DAP_available"]] <-
     sum(sapply(compLevel.data$agroid,
               function(x) {
-                if ("DAP" %in% files.dta$long_stockedfert_tz.dta$fert_name[which(
-                  files.dta$long_stockedfert_tz.dta$agroid %in% x )]){
+                if ("DAP" %in% files.dta$long_stockedfert_tz.dta$fert_name[
+                  which(files.dta$long_stockedfert_tz.dta$agroid %in% x )]
+                  ){
                   return(1)
                 } else return(0)
-              }))/dim(compLevel.data)[1]*100
+              }))/length(compLevel.data$agroid)*100
   
   
   # F 2 (ii)
@@ -333,7 +334,7 @@ for (compLevel in c("Total", unique(agro_clstr_hq_dist.sf$competition))) {
                    files.dta$long_stockedfert_tz.dta$agroid %in% x )]){
                    return(1)
                  } else return(0)
-               }))/dim(compLevel.data)[1]*100
+               }))/length(compLevel.data$agroid)*100
   
   # F 2 (iii)
   # Can							only Can
@@ -344,7 +345,7 @@ for (compLevel in c("Total", unique(agro_clstr_hq_dist.sf$competition))) {
                    files.dta$long_stockedfert_tz.dta$agroid %in% x )]){
                    return(1)
                  } else return(0)
-               }))/dim(compLevel.data)[1]*100
+               }))/length(compLevel.data$agroid)*100
   # F 2 (iv)
   # SA							only SA
   table_3[[compLevel]][["SA (21:0:0)_available"]] <-
@@ -354,113 +355,81 @@ for (compLevel in c("Total", unique(agro_clstr_hq_dist.sf$competition))) {
                    files.dta$long_stockedfert_tz.dta$agroid %in% x )]){
                    return(1)
                  } else return(0)
-               }))/dim(compLevel.data)[1]*100
+               }))/length(compLevel.data$agroid)*100
  
   # F 3 (i) a
   # Fertilizer price per 50 kg (in TSH)
   # DAP							only DAP
   table_3[[compLevel]][["DAP_Fertilizer price per 50 kg"]] <-
-    mean(unlist(sapply(compLevel.data$agroid,
-                function(x) {
-                  fert.pack.select <- 
-                    files.dta$long_stockedfert_tz.dta$fertprice[which(
-                      files.dta$long_stockedfert_tz.dta$agroid %in% x &
-                        files.dta$long_stockedfert_tz.dta$fert_name %in% "DAP" &
-                        files.dta$long_stockedfert_tz.dta$fert_pack %in% "50kg bag"
-                    )]
-                })), na.rm = TRUE)
+    mean(files.dta$long_stockedfert_tz.dta$fertprice[
+      which(files.dta$long_stockedfert_tz.dta$agroid %in% compLevel.data$agroid &
+              files.dta$long_stockedfert_tz.dta$fert_name %in% "DAP" &
+              files.dta$long_stockedfert_tz.dta$fert_pack %in% "50kg bag"
+            )], na.rm = TRUE)
   
   # F 3 (i) b
   # standard deviation
   table_3[[compLevel]][["DAP_Fertilizer price per 50 kg_sd"]] <-
-    sd(unlist(sapply(compLevel.data$agroid,
-                     function(x) {
-                       fert.pack.select <- 
-                         files.dta$long_stockedfert_tz.dta$fertprice[which(
-                           files.dta$long_stockedfert_tz.dta$agroid %in% x &
-                             files.dta$long_stockedfert_tz.dta$fert_name %in% "DAP" &
-                             files.dta$long_stockedfert_tz.dta$fert_pack %in% "50kg bag"
-                         )]
-                     })), na.rm = TRUE)
+    sd(files.dta$long_stockedfert_tz.dta$fertprice[
+      which(files.dta$long_stockedfert_tz.dta$agroid %in% compLevel.data$agroid &
+              files.dta$long_stockedfert_tz.dta$fert_name %in% "DAP" &
+              files.dta$long_stockedfert_tz.dta$fert_pack %in% "50kg bag"
+      )], na.rm = TRUE)
   
   
   # F 3 (ii) a
   # Urea							only urea						
   table_3[[compLevel]][["Urea_Fertilizer price per 50 kg"]] <-
-    mean(unlist(sapply(compLevel.data$agroid,
-                       function(x) {
-                         fert.pack.select <- 
-                           files.dta$long_stockedfert_tz.dta$fertprice[which(
-                             files.dta$long_stockedfert_tz.dta$agroid %in% x &
-                               files.dta$long_stockedfert_tz.dta$fert_name %in% "Urea" &
-                               files.dta$long_stockedfert_tz.dta$fert_pack %in% "50kg bag"
-                           )]
-                       })), na.rm = TRUE)
+    mean(files.dta$long_stockedfert_tz.dta$fertprice[
+      which(files.dta$long_stockedfert_tz.dta$agroid %in% compLevel.data$agroid &
+              files.dta$long_stockedfert_tz.dta$fert_name %in% "Urea" &
+              files.dta$long_stockedfert_tz.dta$fert_pack %in% "50kg bag"
+      )], na.rm = TRUE)
   
   # F 3 (ii) b
   # standard deviation
   table_3[[compLevel]][["Urea_Fertilizer price per 50 kg_sd"]] <-
-    sd(unlist(sapply(compLevel.data$agroid,
-                     function(x) {
-                       fert.pack.select <- 
-                         files.dta$long_stockedfert_tz.dta$fertprice[which(
-                           files.dta$long_stockedfert_tz.dta$agroid %in% x &
-                             files.dta$long_stockedfert_tz.dta$fert_name %in% "Urea" &
-                             files.dta$long_stockedfert_tz.dta$fert_pack %in% "50kg bag"
-                         )]
-                     })), na.rm = TRUE)
+    sd(files.dta$long_stockedfert_tz.dta$fertprice[
+      which(files.dta$long_stockedfert_tz.dta$agroid %in% compLevel.data$agroid &
+              files.dta$long_stockedfert_tz.dta$fert_name %in% "Urea" &
+              files.dta$long_stockedfert_tz.dta$fert_pack %in% "50kg bag"
+      )], na.rm = TRUE)
   
   # F 3 (iii) a
   # Can							only Can						
   table_3[[compLevel]][["CAN (26:0:0)_Fertilizer price per 50 kg"]] <-
-    mean(unlist(sapply(compLevel.data$agroid,
-                       function(x) {
-                         fert.pack.select <- 
-                           files.dta$long_stockedfert_tz.dta$fertprice[which(
-                             files.dta$long_stockedfert_tz.dta$agroid %in% x &
-                               files.dta$long_stockedfert_tz.dta$fert_name %in% "CAN (26:0:0)" &
-                               files.dta$long_stockedfert_tz.dta$fert_pack %in% "50kg bag"
-                           )]
-                       })), na.rm = TRUE)
+    mean(files.dta$long_stockedfert_tz.dta$fertprice[
+      which(files.dta$long_stockedfert_tz.dta$agroid %in% compLevel.data$agroid &
+              files.dta$long_stockedfert_tz.dta$fert_name %in% "CAN (26:0:0)" &
+              files.dta$long_stockedfert_tz.dta$fert_pack %in% "50kg bag"
+      )], na.rm = TRUE)
   
   # F 3 (iii) b
   # standard deviation
   table_3[[compLevel]][["CAN (26:0:0)_Fertilizer price per 50 kg_sd"]] <-
-    sd(unlist(sapply(compLevel.data$agroid,
-                     function(x) {
-                       fert.pack.select <- 
-                         files.dta$long_stockedfert_tz.dta$fertprice[which(
-                           files.dta$long_stockedfert_tz.dta$agroid %in% x &
-                             files.dta$long_stockedfert_tz.dta$fert_name %in% "CAN (26:0:0)" &
-                             files.dta$long_stockedfert_tz.dta$fert_pack %in% "50kg bag"
-                         )]
-                     })), na.rm = TRUE)
+    sd(files.dta$long_stockedfert_tz.dta$fertprice[
+      which(files.dta$long_stockedfert_tz.dta$agroid %in% compLevel.data$agroid &
+              files.dta$long_stockedfert_tz.dta$fert_name %in% "CAN (26:0:0)" &
+              files.dta$long_stockedfert_tz.dta$fert_pack %in% "50kg bag"
+      )], na.rm = TRUE)
   
   # F 3 (iv) a
   # SA							only SA						
   table_3[[compLevel]][["SA (21:0:0)_Fertilizer price per 50 kg"]] <-
-    mean(unlist(sapply(compLevel.data$agroid,
-                       function(x) {
-                         fert.pack.select <- 
-                           files.dta$long_stockedfert_tz.dta$fertprice[which(
-                             files.dta$long_stockedfert_tz.dta$agroid %in% x &
-                               files.dta$long_stockedfert_tz.dta$fert_name %in% "SA (21:0:0)" &
-                               files.dta$long_stockedfert_tz.dta$fert_pack %in% "50kg bag"
-                           )]
-                       })), na.rm = TRUE)
+    mean(files.dta$long_stockedfert_tz.dta$fertprice[
+      which(files.dta$long_stockedfert_tz.dta$agroid %in% compLevel.data$agroid  &
+              files.dta$long_stockedfert_tz.dta$fert_name %in% "SA (21:0:0)" &
+              files.dta$long_stockedfert_tz.dta$fert_pack %in% "50kg bag"
+      )], na.rm = TRUE)
   
   # F 3 (iv) b
   # standard deviation						
   table_3[[compLevel]][["SA (21:0:0)_Fertilizer price per 50 kg_sd"]] <-
-    sd(unlist(sapply(compLevel.data$agroid,
-                       function(x) {
-                         fert.pack.select <- 
-                           files.dta$long_stockedfert_tz.dta$fertprice[which(
-                             files.dta$long_stockedfert_tz.dta$agroid %in% x &
-                               files.dta$long_stockedfert_tz.dta$fert_name %in% "SA (21:0:0)" &
-                               files.dta$long_stockedfert_tz.dta$fert_pack %in% "50kg bag"
-                           )]
-                       })), na.rm = TRUE)
+    sd(files.dta$long_stockedfert_tz.dta$fertprice[
+      which(files.dta$long_stockedfert_tz.dta$agroid %in% compLevel.data$agroid  &
+              files.dta$long_stockedfert_tz.dta$fert_name %in% "SA (21:0:0)" &
+              files.dta$long_stockedfert_tz.dta$fert_pack %in% "50kg bag"
+      )], na.rm = TRUE)
   
   
   # F 4 
