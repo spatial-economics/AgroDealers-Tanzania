@@ -64,6 +64,9 @@ for (compLevel in c("Total", unique(agro_clstr_hq_dist.sf$competition))) {
   
   
 # Analysis of the compLevel data ------------------------------------------
+
+# -------------------------------------------------------------------------
+
   # Maize seed
   # M 1 (i)
   # # varieties per agro-dealer							take into account all varieties
@@ -82,7 +85,10 @@ for (compLevel in c("Total", unique(agro_clstr_hq_dist.sf$competition))) {
                 length(files.dta$long_stockedmaize_tz.dta$maizevar_stock[which(
                   files.dta$long_stockedmaize_tz.dta$agroid %in% x)])
               }), na.rm = TRUE)
+
   
+# -------------------------------------------------------------------------
+
   # M 2
   # At least one variety available of (%)
   # (At this competition Level)
@@ -139,9 +145,9 @@ for (compLevel in c("Total", unique(agro_clstr_hq_dist.sf$competition))) {
                  
                }) >= 1) / length(compLevel.data$agroid)*100
   
-  
-  
-  
+
+# -------------------------------------------------------------------------
+
   # M 3
   # Seed price per 2kg (in TSH)
   # M 3 (i) a
@@ -152,37 +158,28 @@ for (compLevel in c("Total", unique(agro_clstr_hq_dist.sf$competition))) {
                maize_vrty_categories.csv$N30 %in% 1 )],
       ";"))
   
+  # Get mean price per 2kg packs for varieties  in 
+    #   goverment N30 (10% of stores) list
   table_3[[compLevel]][["Government:MEAN_Seed price per 2kg (in TSH)"]] <-
-    mean(unlist(sapply(compLevel.data$agroid,
-                function(x) {
-                  # Get varieties per agrodealer in 2kg package and in 
-                  #   goverment N30 (10% of stores) list
-                  x.vrtys.data <-
-                    files.dta$long_stockedmaize_tz.dta$seed_pprice[which(
-                      files.dta$long_stockedmaize_tz.dta$agroid %in% x &
-                        files.dta$long_stockedmaize_tz.dta$maize_pack %in% "2kg pack" &
-                        files.dta$long_stockedmaize_tz.dta$maizevar_stock %in% gvmnt.vrty_30
-                    )]
-                  
-                  
-                })), na.rm = TRUE)
+    mean(files.dta$long_stockedmaize_tz.dta$seed_pprice[
+      which(files.dta$long_stockedmaize_tz.dta$agroid %in% compLevel.data$agroid &
+              files.dta$long_stockedmaize_tz.dta$maize_pack %in% "2kg pack" &
+              files.dta$long_stockedmaize_tz.dta$maizevar_stock %in% gvmnt.vrty_30
+            )], na.rm = TRUE)
+  
   
   # M 3 (i) b
   # standard deviation
+  # Get standard deviation of price per 2kg packs for varieties  in 
+    #   goverment N30 (10% of stores) list
   table_3[[compLevel]][["Government:SD_Seed price per 2kg (in TSH)"]] <-
-    sd(unlist(sapply(compLevel.data$agroid,
-                     function(x) {
-                       # Get varieties per agrodealer in 2kg package and in 
-                       #   goverment N30 (10% of stores) list
-                       x.vrtys.data <-
-                         files.dta$long_stockedmaize_tz.dta$seed_pprice[which(
-                           files.dta$long_stockedmaize_tz.dta$agroid %in% x &
-                             files.dta$long_stockedmaize_tz.dta$maize_pack %in% "2kg pack" &
-                             files.dta$long_stockedmaize_tz.dta$maizevar_stock %in% gvmnt.vrty_30
-                         )]
-                       
-                       
-                     })), na.rm = TRUE)
+    sd(files.dta$long_stockedmaize_tz.dta$seed_pprice[
+      which(files.dta$long_stockedmaize_tz.dta$agroid %in% compLevel.data$agroid &
+              files.dta$long_stockedmaize_tz.dta$maize_pack %in% "2kg pack" &
+              files.dta$long_stockedmaize_tz.dta$maizevar_stock %in% gvmnt.vrty_30
+      )], na.rm = TRUE)
+  
+  
   
   # M 3 (ii) a
   # Local companies							varieties available in 10% of stores, see word file for the list
@@ -192,37 +189,27 @@ for (compLevel in c("Total", unique(agro_clstr_hq_dist.sf$competition))) {
               maize_vrty_categories.csv$N30 %in% 1 )],
       ";"))
   
+  # Get mean price per 2kg packs for varieties  in 
+  #   National/Regional  N30 (10% of stores) list
   table_3[[compLevel]][["National_Regional:MEAN_Seed price per 2kg (in TSH)"]] <-
-    mean(unlist(sapply(compLevel.data$agroid,
-                       function(x) {
-                         # Get varieties per agrodealer in 2kg package and in 
-                         #   National/Regional N30 (10% of stores) list
-                         x.vrtys.data <-
-                           files.dta$long_stockedmaize_tz.dta$seed_pprice[which(
-                             files.dta$long_stockedmaize_tz.dta$agroid %in% x &
-                               files.dta$long_stockedmaize_tz.dta$maize_pack %in% "2kg pack" &
-                               files.dta$long_stockedmaize_tz.dta$maizevar_stock %in% ntnl.rgnl.vrty_30
-                           )]
-                         
-                         
-                       })), na.rm = TRUE)
+    mean(files.dta$long_stockedmaize_tz.dta$seed_pprice[
+      which(files.dta$long_stockedmaize_tz.dta$agroid %in% compLevel.data$agroid &
+              files.dta$long_stockedmaize_tz.dta$maize_pack %in% "2kg pack" &
+              files.dta$long_stockedmaize_tz.dta$maizevar_stock %in% ntnl.rgnl.vrty_30
+      )], na.rm = TRUE)
+  
   
   # M 3 (ii) b
   # standard deviation
+  # Get standard deviation of price per 2kg packs for varieties  in 
+  #   National/Regional N30 (10% of stores) list
   table_3[[compLevel]][["National_Regional:SD_Seed price per 2kg (in TSH)"]] <-
-    sd(unlist(sapply(compLevel.data$agroid,
-                       function(x) {
-                         # Get varieties per agrodealer in 2kg package and in 
-                         #   National/Regional N30 (10% of stores) list
-                         x.vrtys.data <-
-                           files.dta$long_stockedmaize_tz.dta$seed_pprice[which(
-                             files.dta$long_stockedmaize_tz.dta$agroid %in% x &
-                               files.dta$long_stockedmaize_tz.dta$maize_pack %in% "2kg pack" &
-                               files.dta$long_stockedmaize_tz.dta$maizevar_stock %in% ntnl.rgnl.vrty_30
-                           )]
-                         
-                         
-                       })), na.rm = TRUE)
+    sd(files.dta$long_stockedmaize_tz.dta$seed_pprice[
+      which(files.dta$long_stockedmaize_tz.dta$agroid %in% compLevel.data$agroid &
+              files.dta$long_stockedmaize_tz.dta$maize_pack %in% "2kg pack" &
+              files.dta$long_stockedmaize_tz.dta$maizevar_stock %in% ntnl.rgnl.vrty_30
+      )], na.rm = TRUE)
+  
   
   # M 3 (iii) a
   # International companies							varieties available in 10% of stores, see word file for the list
@@ -232,37 +219,30 @@ for (compLevel in c("Total", unique(agro_clstr_hq_dist.sf$competition))) {
                maize_vrty_categories.csv$N30 %in% 1 )],
       ";"))
   
+  # Get mean price per 2kg packs for varieties  in 
+  #   International  N30 (10% of stores) list
   table_3[[compLevel]][["International:MEAN_Seed price per 2kg (in TSH)"]] <-
-    mean(unlist(sapply(compLevel.data$agroid,
-                       function(x) {
-                         # Get varieties per agrodealer in 2kg package and in 
-                         #   International N30 (10% of stores) list
-                         x.vrtys.data <-
-                           files.dta$long_stockedmaize_tz.dta$seed_pprice[which(
-                             files.dta$long_stockedmaize_tz.dta$agroid %in% x &
-                               files.dta$long_stockedmaize_tz.dta$maize_pack %in% "2kg pack" &
-                               files.dta$long_stockedmaize_tz.dta$maizevar_stock %in% intnl.vrty_30
-                           )]
-                         
-                         
-                       })), na.rm = TRUE)
+    mean(files.dta$long_stockedmaize_tz.dta$seed_pprice[
+      which(files.dta$long_stockedmaize_tz.dta$agroid %in% compLevel.data$agroid &
+              files.dta$long_stockedmaize_tz.dta$maize_pack %in% "2kg pack" &
+              files.dta$long_stockedmaize_tz.dta$maizevar_stock %in% intnl.vrty_30
+      )], na.rm = TRUE)
+  
   
   # M 3 (iii) b
   # standard deviation
+  # Get standard deviation of price per 2kg packs for varieties  in 
+  #   International N30 (10% of stores) list
   table_3[[compLevel]][["International:SD_Seed price per 2kg (in TSH)"]] <-
-    sd(unlist(sapply(compLevel.data$agroid,
-                     function(x) {
-                       # Get varieties per agrodealer in 2kg package and in 
-                       #   International N30 (10% of stores) list
-                       x.vrtys.data <-
-                         files.dta$long_stockedmaize_tz.dta$seed_pprice[which(
-                           files.dta$long_stockedmaize_tz.dta$agroid %in% x &
-                             files.dta$long_stockedmaize_tz.dta$maize_pack %in% "2kg pack" &
-                             files.dta$long_stockedmaize_tz.dta$maizevar_stock %in% intnl.vrty_30
-                         )]
-                       
-                       
-                     })), na.rm = TRUE)
+    sd(files.dta$long_stockedmaize_tz.dta$seed_pprice[
+      which(files.dta$long_stockedmaize_tz.dta$agroid %in% compLevel.data$agroid &
+              files.dta$long_stockedmaize_tz.dta$maize_pack %in% "2kg pack" &
+              files.dta$long_stockedmaize_tz.dta$maizevar_stock %in% intnl.vrty_30
+      )], na.rm = TRUE)
+  
+
+# -------------------------------------------------------------------------
+
   # M 4
   # Reliable supply (%) (% very reliable)
   # M 4 (i)
@@ -278,6 +258,7 @@ for (compLevel in c("Total", unique(agro_clstr_hq_dist.sf$competition))) {
                    ),]
                  dim(x.vrtys)[1]
                }))
+  
   table_3[[compLevel]][["Reliable supply (% very reliable):Government varieties >30%"]] <-
     gvmnt.reliable.supply_total * 100 / dim(files.dta$long_stockedmaize_tz.dta[which(
       files.dta$long_stockedmaize_tz.dta$agroid %in% compLevel.data$agroid &
@@ -298,6 +279,7 @@ for (compLevel in c("Total", unique(agro_clstr_hq_dist.sf$competition))) {
                    ),]
                  dim(x.vrtys)[1]
                }))
+  
   table_3[[compLevel]][["Reliable supply (% very reliable):National_Regional >30%"]] <-
     ntnl.rgnl.reliable.supply_total * 100 / dim(files.dta$long_stockedmaize_tz.dta[which(
       files.dta$long_stockedmaize_tz.dta$agroid %in% compLevel.data$agroid &
