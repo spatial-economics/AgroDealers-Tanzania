@@ -18,7 +18,7 @@ files.dta_folder <- list.files("data/Esoko safari/data", pattern = "*.dta", full
 
 clusters.of.agrodealers <- read.csv("data/ClusterCoords.csv")
 
-agro_clstr_hq_dist.csv <- read.csv("D:/Jordan/AgroDealearsTZ/output/csv/agro_clstr_hq_dist.csv")
+agro_clstr_hq_dist.csv <- read.csv("output/csv/agro_clstr_hq_dist.csv")
 maize_vrty_categories.csv <- read.csv("data/MaizeVarietyCategories.csv")
 table_3.template <- read_xlsx("data/fwtanzaniaagrodealersclusters/Tanzania paper tables.xlsx", "Table 3")
 table_3.rownames <- read.csv("data/Table_3_rownames.csv")

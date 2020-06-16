@@ -14,17 +14,18 @@ table_1 <- list()
 
 # Inputs ------------------------------------------------------------------
 
-files.dta_folder <- list.files("data/Esoko safari/data", pattern = "*.dta", full.names = TRUE)
 
-stockedfert.dta <- read.dta("data/Esoko safari/data/long_stockedfert_tz.dta")
-stockedmaize.dta <- read.dta("data/Esoko safari/data/long_stockedmaize_tz.dta")
+# stockedfert.dta <- read.dta("data/Esoko safari/data/long_stockedfert_tz.dta")
+# stockedmaize.dta <- read.dta("data/Esoko safari/data/long_stockedmaize_tz.dta")
+
+files.dta_folder <- list.files("data/Esoko safari/data", pattern = "*.dta", full.names = TRUE)
 agrodealers.clustered <- read.csv("data/tzaagrodealersclustered.csv")
 clusters.of.agrodealers <- read.csv("data/ClusterCoords.csv")
 table_1.template <- read_xlsx("data/fwtanzaniaagrodealersclusters/Tanzania paper tables.xlsx", "Table 1")
 table_1.rownames <- read.csv("data/Table_1_rownames.csv")
 
 wgs.prj <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
-agro_clstr_hq_dist.csv <- read.csv("D:/Jordan/AgroDealearsTZ/output/csv/agro_clstr_hq_dist.csv")
+agro_clstr_hq_dist.csv <- read.csv("output/csv/agro_clstr_hq_dist.csv")
 
 
 # Prepare Data ------------------------------------------------------------

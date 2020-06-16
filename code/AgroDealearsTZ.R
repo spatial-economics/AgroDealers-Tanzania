@@ -9,16 +9,16 @@ library(sf)
 library(RColorBrewer)
 
 # Functions
-source('D:/Jordan/AgroDealearsTZ/code/AgroDealearsTZ_functions.R')
+source('./code/AgroDealearsTZ_functions.R')
 # INPUT DATA --------------------------------------------------------------------------------------
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-agrodealers.csv <- read.csv("./data/Esoko safari/spatial/agroid_coordinates_prices.csv")
+agrodealers.csv <- read.csv("data/Esoko safari/spatial/agroid_coordinates_prices.csv")
 tza.osm.towns_ <- shapefile(
     "data/hotosm_tza_populated_places_points_shp/hotosm_tza_populated_places_points.shp")
 
 # tza.roads <- shapefile("./data/Tanzania/Roads/TZA_Roads.shp")
-tza.osm.roads_ <- shapefile("./data/Tanzania/Roads/OpenStreetMap/hotosm_tza_roads_lines.shp")
+tza.osm.roads_ <- shapefile("data/TZA_Roads/hotosm_tza_roads_lines.shp")
 
 tza.population_ <- raster("data/TZA_popmap15adj_v2b.tif")
 tza.landcover <- raster("spatial/glc2000/glc2000_dd.tif")

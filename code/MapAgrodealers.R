@@ -12,7 +12,7 @@ library(rgeos)
 
 # tza.osm.roads_ <- shapefile("D:/Jordan/AgroDealearsTZ/data/Tanzania/Roads/OpenStreetMap/hotosm_tza_roads_lines.shp")
 wgs.prj <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
-map.agrodealers.csv <- read.csv("D:/Jordan/AgroDealearsTZ/output/tzaagrodealersoutput.csv")
+map.agrodealers.csv <- read.csv("output/tzaagrodealersoutput.csv")
 map.agrodealers.shp <- SpatialPointsDataFrame(data.frame( 
                                                  map.agrodealers.csv$longitude, 
                                                  map.agrodealers.csv$latitude),

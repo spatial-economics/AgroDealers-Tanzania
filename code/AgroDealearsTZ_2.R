@@ -3,7 +3,7 @@ library(raster)
 library(riverdist)
 library(gmapsdistance)
 # source('./code/AgroDealearsTZ.R')
-source('D:/Jordan/AgroDealearsTZ/code/AgroDealearsTZ_functions.R')
+source('code/AgroDealearsTZ_functions.R')
 
 
 agrodealers.clustered <- read.csv("data/tzaagrodealersclustered.csv")
