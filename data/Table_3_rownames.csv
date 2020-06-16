@@ -1,0 +1,41 @@
+x,Template,Table
+1,Maize seed,NA
+2,# varieties per agro-dealer,varieties per agro-dealer
+3,standard deviation,standard deviation varieties per agro-dealer
+4,At least one variety available of (%),NA
+5,Government varieties,Government varieties >= 1
+6,Local companies,National_Regional varieties >= 1
+7,International companies,International varieties >= 1
+8,Seed price per 2kg (in TSH),NA
+9,Government varieties,Government:MEAN_Seed price per 2kg (in TSH)
+10,standard deviation,Government:SD_Seed price per 2kg (in TSH)
+11,Local companies,National_Regional:MEAN_Seed price per 2kg (in TSH)
+12,standard deviation,National_Regional:SD_Seed price per 2kg (in TSH)
+13,International companies,International:MEAN_Seed price per 2kg (in TSH)
+14,standard deviation,International:SD_Seed price per 2kg (in TSH)
+15,Reliable supply (%) (% very reliable),NA
+16,Government varieties,Reliable supply (% very reliable):Government varieties >30%
+17,Local companies,Reliable supply (% very reliable):National_Regional >30%
+18,International companies,Reliable supply (% very reliable):International varieties >30%
+19,Fertilizer,NA
+20,# products per agro-dealer,Fertilizer types per agro-dealer
+21,standard deviation,standard deviation Fertilizer types per agro-dealer
+22,Product available (%),NA
+23,DAP,DAP_available
+24,Urea,Urea_available
+25,Can,CAN (26:0:0)_available
+26,SA,SA (21:0:0)_available
+27,Fertilizer price per 50 kg (in TSH),NA
+28,DAP,DAP_Fertilizer price per 50 kg
+29,standard deviation,DAP_Fertilizer price per 50 kg_sd
+30,Urea,Urea_Fertilizer price per 50 kg
+31,standard deviation,Urea_Fertilizer price per 50 kg_sd
+32,Can,CAN (26:0:0)_Fertilizer price per 50 kg
+33,standard deviation,CAN (26:0:0)_Fertilizer price per 50 kg_sd
+34,SA,SA (21:0:0)_Fertilizer price per 50 kg
+35,standard deviation,SA (21:0:0)_Fertilizer price per 50 kg_sd
+36,Reliable supply (%)  (% very reliable),NA
+37,DAP,DAP_Reliable supply (% very reliable)
+38,Urea,Urea_Reliable supply (% very reliable)
+39,Can,CAN (26:0:0)_Reliable supply (% very reliable)
+40,SA,SA (21:0:0)_Reliable supply (% very reliable)

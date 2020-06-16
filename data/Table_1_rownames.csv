@@ -1,0 +1,36 @@
+x,Template,Table
+1,N,Number
+2,"Years in business  (2019 = 0, 2018 = 1,...)",Years_in_business
+3,Standard deviation,Years_in_business_sd
+4,Member of agrodealer association (%),Member_of_agrodealer_association_(%)
+5,Products available (%),NA
+6,Maize seeds,Maize seeds_(%)
+7,Other seeds,Other_seeds
+8,Fertilizer,Fertilizer
+9,Herbicide,Herbicide
+10,Pesticide (for crop application),Pesticides
+11,Lime,Lime
+12,Foliar feeds,Foliar feeds
+13,Other crop chemicals,Other crop chemicals
+14,Farm tools,Farm tools
+15,Veterinary chemicals,Veterinary chemicals
+16,Livestock feeds,Livestock feeds
+17,"Other products like pharmaceutical, cosmetics, food, hardware,…","Other products like pharmaceutical, cosmetics, food, hardware,…"
+18,Other (Specify……),Other (Specify……)
+19,Share of revenue (%) ,NA
+20,Maize seed,revenue_Maize seeds_(%)
+21,Fertilizer,revenue_Fertilizer_(%)
+22,Other crop inputs,revenue_othcrp_input_(%)
+23,Livestock input,revenue_livestock_input_(%)
+24,Other seeds,revenue_Other_seeds_(%)
+25,Other products,revenue_Other_products_(%)
+26,Total available maize varieties in all shops (sum),Total_unique_maize_varieties
+27,Available varieties per shop (average),Average_maize_varty_per_shop
+28,Standard deviation,Standard_deviation_maize_varty_per_shop
+29,Total available fertilizer types in all shops (sum),Total_unique_fertilizer_types
+30,Available fertilizers per shop (average),Average_fertilizer_type_per_shop
+31,Standard deviation,Standard_deviation_fertilizers_type_per_shop
+32,Agro-dealer / farmer ratio,NA
+33,% of farmers within 30 minutes travel time,Rural_population_<30min_traveltime
+34,% of farmers within 1 hour travel time,Rural_population_<1hr_traveltime
+35,% of farmers within 2 hours travel time,Rural_population_<2hr_traveltime
